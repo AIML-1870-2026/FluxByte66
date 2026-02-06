@@ -355,12 +355,12 @@
                 </div>
                 <div class="panel-content">
                     <div class="control-group">
-                        <label>Feed Rate (f) <span id="fVal">0.055</span></label>
-                        <input type="range" id="feedRate" min="0" max="100" value="55" step="1">
+                        <label>Feed Rate (f) <span id="fVal">0.034</span></label>
+                        <input type="range" id="feedRate" min="0" max="100" value="34" step="1">
                     </div>
                     <div class="control-group">
-                        <label>Kill Rate (k) <span id="kVal">0.062</span></label>
-                        <input type="range" id="killRate" min="0" max="100" value="62" step="1">
+                        <label>Kill Rate (k) <span id="kVal">0.059</span></label>
+                        <input type="range" id="killRate" min="0" max="100" value="59" step="1">
                     </div>
                     <div class="control-group">
                         <label>Diffusion U (Du) <span id="duVal">0.21</span></label>
@@ -525,8 +525,8 @@
 
         // Parameters
         let params = {
-            f: 0.055,
-            k: 0.062,
+            f: 0.034,
+            k: 0.059,
             Du: 0.21,
             Dv: 0.10,
             dt: 1.0,
@@ -536,17 +536,17 @@
 
         // Presets
         const presets = {
-            spots: { f: 0.055, k: 0.062, desc: 'Classic leopard-like spot pattern. Stable and visually striking.' },
-            stripes: { f: 0.035, k: 0.065, desc: 'Zebra-like stripe formations. Emerges from linear instabilities.' },
-            mixed: { f: 0.050, k: 0.065, desc: 'A mix of spots and stripes creating organic textures.' },
-            coral: { f: 0.029, k: 0.057, desc: 'Maze-like coral structures. Slowly evolving labyrinthine patterns.' },
-            spirals: { f: 0.018, k: 0.051, desc: 'Rotating spiral waves. Hypnotic and dynamic.' },
-            waves: { f: 0.014, k: 0.045, desc: 'Propagating wave fronts. Creates ripple-like effects.' },
-            mitosis: { f: 0.026, k: 0.051, desc: 'Self-replicating spots that divide like cells.' },
-            solitons: { f: 0.025, k: 0.050, desc: 'Pulsating solitary waves that maintain their shape.' },
-            negative: { f: 0.062, k: 0.061, desc: 'Inverse pattern with U-shaped skating behavior.' },
-            worms: { f: 0.078, k: 0.061, desc: 'Wriggling worm-like structures that move chaotically.' },
-            fingerprints: { f: 0.037, k: 0.060, desc: 'Fine fingerprint-like ridge patterns.' }
+            spots: { f: 0.034, k: 0.059, desc: 'Classic leopard-like spot pattern. Stable and visually striking.' },
+            stripes: { f: 0.022, k: 0.051, desc: 'Zebra-like stripe formations. Emerges from linear instabilities.' },
+            mixed: { f: 0.030, k: 0.057, desc: 'A mix of spots and stripes creating organic textures.' },
+            coral: { f: 0.046, k: 0.063, desc: 'Maze-like coral structures. Slowly evolving labyrinthine patterns.' },
+            spirals: { f: 0.014, k: 0.045, desc: 'Rotating spiral waves. Hypnotic and dynamic.' },
+            waves: { f: 0.014, k: 0.047, desc: 'Propagating wave fronts. Creates ripple-like effects.' },
+            mitosis: { f: 0.028, k: 0.062, desc: 'Self-replicating spots that divide like cells.' },
+            solitons: { f: 0.030, k: 0.062, desc: 'Pulsating solitary waves that maintain their shape.' },
+            negative: { f: 0.046, k: 0.064, desc: 'Inverse pattern creating negative space formations.' },
+            worms: { f: 0.038, k: 0.061, desc: 'Wriggling worm-like structures that move and connect.' },
+            fingerprints: { f: 0.042, k: 0.059, desc: 'Fine fingerprint-like ridge patterns.' }
         };
 
         // Color schemes
