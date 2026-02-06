@@ -511,13 +511,9 @@
     </div>
 
     <script>
-        // Gray-Scott Reaction-Diffusion Simulation with WebGL
+        // Gray-Scott Reaction-Diffusion Simulation
         const canvas = document.getElementById('canvas');
-        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-
-        if (!gl) {
-            alert('WebGL not supported. Please use a modern browser.');
-        }
+        const ctx = canvas.getContext('2d');
 
         // Simulation state
         let running = true;
@@ -750,7 +746,6 @@
 
         // Render to canvas
         function render() {
-            const ctx = canvas.getContext('2d');
             const imageData = ctx.createImageData(GRID_SIZE, GRID_SIZE);
 
             for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
