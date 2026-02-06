@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Patterns Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: #16213e;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #0f3460;
+            flex-shrink: 0;
+        }
+
+        .sidebar h1 {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+            color: #e94560;
+        }
+
+        .sidebar .subtitle {
+            font-size: 0.85em;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        /* Collapsible Panels */
+        .panel {
+            background: #0f3460;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a40;
+            transition: background 0.2s;
+        }
+
+        .panel-header:hover {
+            background: #252560;
+        }
+
+        .panel-header h3 {
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .panel-header .arrow {
+            transition: transform 0.3s;
+        }
+
+        .panel.collapsed .arrow {
+            transform: rotate(-90deg);
+        }
+
+        .panel-content {
+            padding: 15px;
+            display: block;
+        }
+
+        .panel.collapsed .panel-content {
+            display: none;
+        }
+
+        /* Controls */
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .control-group label span {
+            color: #e94560;
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1a1a2e;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e94560;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b6b;
+        }
+
+        .btn-secondary {
+            background: #1a1a40;
+            color: #eee;
+            border: 1px solid #333;
+        }
+
+        .btn-secondary:hover {
+            background: #252560;
+        }
+
+        /* Preset Select */
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        /* Canvas Container */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a1a;
+        }
+
+        #canvas {
+            flex: 1;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        /* Bottom Bar */
+        .bottom-bar {
+            padding: 10px 20px;
+            background: #16213e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85em;
+            border-top: 1px solid #0f3460;
+        }
+
+        .status {
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-item {
+            color: #888;
+        }
+
+        .status-item span {
+            color: #e94560;
+            font-family: monospace;
+        }
+
+        /* Preset Description */
+        .preset-desc {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 10px;
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            min-height: 40px;
+        }
+
+        /* Brush Controls */
+        .brush-controls {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #1a1a40;
+        }
+
+        /* Color Scheme Buttons */
+        .color-schemes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .color-btn {
+            padding: 8px;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .color-btn.active {
+            border-color: #e94560;
+        }
+
+        .color-btn.grayscale { background: linear-gradient(90deg, #000, #fff); color: #000; }
+        .color-btn.heatmap { background: linear-gradient(90deg, #000080, #ff0, #f00); }
+        .color-btn.rainbow { background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f); }
+        .color-btn.ocean { background: linear-gradient(90deg, #001a33, #0077b6, #00f5d4); }
+
+        /* Seeding Buttons */
+        .seed-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        /* Export Options */
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .resolution-select {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .res-btn {
+            padding: 6px 12px;
+            border: 1px solid #333;
+            background: #1a1a2e;
+            color: #eee;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .res-btn:hover, .res-btn.active {
+            border-color: #e94560;
+            background: #252560;
+        }
+
+        /* Info Panel */
+        .info-text {
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .info-text a {
+            color: #e94560;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid #0f3460;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Turing Patterns</h1>
+            <p class="subtitle">Gray-Scott Reaction-Diffusion Explorer</p>
+
+            <!-- Simulation Controls -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Simulation</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="playPauseBtn">Pause</button>
+                        <button class="btn btn-secondary" id="stepBtn">Step</button>
+                        <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                    </div>
+                    <div class="control-group">
+                        <label>Speed <span id="speedVal">1x</span></label>
+                        <input type="range" id="speed" min="1" max="20" value="10">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Parameters</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <div class="control-group">
+                        <label>Feed Rate (f) <span id="fVal">0.055</span></label>
+                        <input type="range" id="feedRate" min="0" max="100" value="55" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label>Kill Rate (k) <span id="kVal">0.062</span></label>
+                        <input type="range" id="killRate" min="0" max="100" value="62" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label>Diffusion U (Du) <span id="duVal">0.21</span></label>
+                        <input type="range" id="diffusionU" min="1" max="50" value="21">
+                    </div>
+                    <div class="control-group">
+                        <label>Diffusion V (Dv) <span id="dvVal">0.10</span></label>
+                        <input type="range" id="diffusionV" min="1" max="50" value="10">
+                    </div>
+                    <div class="control-group">
+                        <label>Time Step (dt) <span id="dtVal">1.0</span></label>
+                        <input type="range" id="timeStep" min="1" max="20" value="10">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="panel collapsed">
+                <div class="panel-header">
+                    <h3>Presets</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <select id="presetSelect">
+                        <optgroup label="Biological">
+                            <option value="spots" selected>Spots (Leopard)</option>
+                            <option value="stripes">Stripes (Zebra)</option>
+                            <option value="mixed">Spots &amp; Stripes</option>
+                            <option value="coral">Coral / Maze</option>
+                        </optgroup>
+                        <optgroup label="Mathematical">
+                            <option value="spirals">Spirals</option>
+                            <option value="waves">Waves</option>
+                            <option value="mitosis">Mitosis</option>
+                            <option value="solitons">Pulsating Solitons</option>
+                        </optgroup>
+                        <optgroup label="Exotic">
+                            <option value="negative">Negative (U-skate)</option>
+                            <option value="worms">Worms</option>
+                            <option value="fingerprints">Fingerprints</option>
+                        </optgroup>
+                    </select>
+                    <div class="preset-desc" id="presetDesc">
+                        Classic leopard-like spot pattern. Stable and visually striking.
+                    </div>
+                    <button class="btn btn-primary" id="loadPresetBtn" style="margin-top: 10px; width: 100%;">Load Preset</button>
+                </div>
+            </div>
+
+            <!-- Initial Conditions -->
+            <div class="panel collapsed">
+                <div class="panel-header">
+                    <h3>Initial Conditions</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <div class="seed-buttons">
+                        <button class="btn btn-secondary" data-seed="random">Random Noise</button>
+                        <button class="btn btn-secondary" data-seed="center">Center Blob</button>
+                        <button class="btn btn-secondary" data-seed="multi">Multi Blobs</button>
+                        <button class="btn btn-secondary" data-seed="ring">Ring</button>
+                    </div>
+                    <div class="brush-controls">
+                        <div class="control-group">
+                            <label>Brush Radius <span id="brushRadiusVal">20</span></label>
+                            <input type="range" id="brushRadius" min="5" max="50" value="20">
+                        </div>
+                        <p style="font-size: 0.8em; color: #888; margin-top: 8px;">
+                            Click and drag on canvas to paint activator
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="panel collapsed">
+                <div class="panel-header">
+                    <h3>Visualization</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <label style="font-size: 0.85em; color: #aaa; margin-bottom: 10px; display: block;">Color Scheme</label>
+                    <div class="color-schemes">
+                        <button class="color-btn grayscale active" data-scheme="grayscale">Grayscale</button>
+                        <button class="color-btn heatmap" data-scheme="heatmap">Heat Map</button>
+                        <button class="color-btn rainbow" data-scheme="rainbow">Rainbow</button>
+                        <button class="color-btn ocean" data-scheme="ocean">Ocean</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="panel collapsed">
+                <div class="panel-header">
+                    <h3>Export</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <div class="export-options">
+                        <label style="font-size: 0.85em; color: #aaa;">Resolution</label>
+                        <div class="resolution-select">
+                            <button class="res-btn active" data-res="current">Current</button>
+                            <button class="res-btn" data-res="1024">1024px</button>
+                            <button class="res-btn" data-res="2048">2048px</button>
+                            <button class="res-btn" data-res="4096">4096px</button>
+                        </div>
+                        <button class="btn btn-primary" id="exportBtn" style="margin-top: 10px;">Export PNG</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="panel collapsed">
+                <div class="panel-header">
+                    <h3>About</h3>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="panel-content">
+                    <div class="info-text">
+                        <p><strong>Turing Patterns</strong> are self-organizing patterns that emerge from reaction-diffusion systems, first described by Alan Turing in 1952.</p>
+                        <br>
+                        <p>This simulation uses the <strong>Gray-Scott model</strong> with two chemicals: an activator (U) and inhibitor (V).</p>
+                        <br>
+                        <p><strong>Parameters:</strong></p>
+                        <ul style="margin-left: 15px; margin-top: 5px;">
+                            <li><strong>f</strong> - Feed rate of U</li>
+                            <li><strong>k</strong> - Kill rate of V</li>
+                            <li><strong>Du/Dv</strong> - Diffusion rates</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="bottom-bar">
+                <div class="status">
+                    <div class="status-item">Status: <span id="statusText">Running</span></div>
+                    <div class="status-item">FPS: <span id="fpsText">60</span></div>
+                    <div class="status-item">Iterations: <span id="iterText">0</span></div>
+                </div>
+                <div class="status">
+                    <div class="status-item">Grid: <span id="gridText">256x256</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gray-Scott Reaction-Diffusion Simulation with WebGL
+        const canvas = document.getElementById('canvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+
+        if (!gl) {
+            alert('WebGL not supported. Please use a modern browser.');
+        }
+
+        // Simulation state
+        let running = true;
+        let iterations = 0;
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 60;
+        let exportResolution = 'current';
+
+        // Parameters
+        let params = {
+            f: 0.055,
+            k: 0.062,
+            Du: 0.21,
+            Dv: 0.10,
+            dt: 1.0,
+            speed: 10,
+            brushRadius: 20
+        };
+
+        // Presets
+        const presets = {
+            spots: { f: 0.055, k: 0.062, desc: 'Classic leopard-like spot pattern. Stable and visually striking.' },
+            stripes: { f: 0.035, k: 0.065, desc: 'Zebra-like stripe formations. Emerges from linear instabilities.' },
+            mixed: { f: 0.050, k: 0.065, desc: 'A mix of spots and stripes creating organic textures.' },
+            coral: { f: 0.029, k: 0.057, desc: 'Maze-like coral structures. Slowly evolving labyrinthine patterns.' },
+            spirals: { f: 0.018, k: 0.051, desc: 'Rotating spiral waves. Hypnotic and dynamic.' },
+            waves: { f: 0.014, k: 0.045, desc: 'Propagating wave fronts. Creates ripple-like effects.' },
+            mitosis: { f: 0.026, k: 0.051, desc: 'Self-replicating spots that divide like cells.' },
+            solitons: { f: 0.025, k: 0.050, desc: 'Pulsating solitary waves that maintain their shape.' },
+            negative: { f: 0.062, k: 0.061, desc: 'Inverse pattern with U-shaped skating behavior.' },
+            worms: { f: 0.078, k: 0.061, desc: 'Wriggling worm-like structures that move chaotically.' },
+            fingerprints: { f: 0.037, k: 0.060, desc: 'Fine fingerprint-like ridge patterns.' }
+        };
+
+        // Color schemes
+        let colorScheme = 'grayscale';
+        const colorSchemes = {
+            grayscale: (v) => [v, v, v],
+            heatmap: (v) => {
+                if (v < 0.5) return [0, v * 2, 1 - v * 2];
+                return [(v - 0.5) * 2, 1 - (v - 0.5) * 2, 0];
+            },
+            rainbow: (v) => {
+                const h = v * 360;
+                return hslToRgb(h, 1, 0.5);
+            },
+            ocean: (v) => {
+                return [v * 0.1, v * 0.5 + 0.3, v * 0.6 + 0.4];
+            }
+        };
+
+        function hslToRgb(h, s, l) {
+            h /= 360;
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [r, g, b];
+        }
+
+        // Grid
+        const GRID_SIZE = 256;
+        let gridU = new Float32Array(GRID_SIZE * GRID_SIZE);
+        let gridV = new Float32Array(GRID_SIZE * GRID_SIZE);
+        let nextU = new Float32Array(GRID_SIZE * GRID_SIZE);
+        let nextV = new Float32Array(GRID_SIZE * GRID_SIZE);
+
+        // Initialize with random noise
+        function initRandom() {
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                gridU[i] = 1.0;
+                gridV[i] = 0.0;
+            }
+            // Add random perturbations
+            const cx = GRID_SIZE / 2;
+            const cy = GRID_SIZE / 2;
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const i = y * GRID_SIZE + x;
+                    const dx = x - cx;
+                    const dy = y - cy;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 20 + Math.random() * 30) {
+                        gridU[i] = 0.5 + Math.random() * 0.1;
+                        gridV[i] = 0.25 + Math.random() * 0.1;
+                    }
+                }
+            }
+            iterations = 0;
+        }
+
+        function initCenter() {
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                gridU[i] = 1.0;
+                gridV[i] = 0.0;
+            }
+            const cx = GRID_SIZE / 2;
+            const cy = GRID_SIZE / 2;
+            const r = 15;
+            for (let y = cy - r; y < cy + r; y++) {
+                for (let x = cx - r; x < cx + r; x++) {
+                    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+                        const dx = x - cx;
+                        const dy = y - cy;
+                        if (dx*dx + dy*dy < r*r) {
+                            const i = y * GRID_SIZE + x;
+                            gridU[i] = 0.5;
+                            gridV[i] = 0.25;
+                        }
+                    }
+                }
+            }
+            iterations = 0;
+        }
+
+        function initMulti() {
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                gridU[i] = 1.0;
+                gridV[i] = 0.0;
+            }
+            const numBlobs = 5 + Math.floor(Math.random() * 5);
+            for (let b = 0; b < numBlobs; b++) {
+                const cx = Math.floor(Math.random() * GRID_SIZE);
+                const cy = Math.floor(Math.random() * GRID_SIZE);
+                const r = 8 + Math.floor(Math.random() * 12);
+                for (let y = cy - r; y < cy + r; y++) {
+                    for (let x = cx - r; x < cx + r; x++) {
+                        const wx = (x + GRID_SIZE) % GRID_SIZE;
+                        const wy = (y + GRID_SIZE) % GRID_SIZE;
+                        const dx = x - cx;
+                        const dy = y - cy;
+                        if (dx*dx + dy*dy < r*r) {
+                            const i = wy * GRID_SIZE + wx;
+                            gridU[i] = 0.5;
+                            gridV[i] = 0.25;
+                        }
+                    }
+                }
+            }
+            iterations = 0;
+        }
+
+        function initRing() {
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                gridU[i] = 1.0;
+                gridV[i] = 0.0;
+            }
+            const cx = GRID_SIZE / 2;
+            const cy = GRID_SIZE / 2;
+            const rOuter = 40;
+            const rInner = 30;
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const dx = x - cx;
+                    const dy = y - cy;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > rInner && dist < rOuter) {
+                        const i = y * GRID_SIZE + x;
+                        gridU[i] = 0.5;
+                        gridV[i] = 0.25;
+                    }
+                }
+            }
+            iterations = 0;
+        }
+
+        // Laplacian with periodic boundaries
+        function laplacian(grid, x, y) {
+            const xm = (x - 1 + GRID_SIZE) % GRID_SIZE;
+            const xp = (x + 1) % GRID_SIZE;
+            const ym = (y - 1 + GRID_SIZE) % GRID_SIZE;
+            const yp = (y + 1) % GRID_SIZE;
+
+            return grid[y * GRID_SIZE + xm] +
+                   grid[y * GRID_SIZE + xp] +
+                   grid[ym * GRID_SIZE + x] +
+                   grid[yp * GRID_SIZE + x] -
+                   4 * grid[y * GRID_SIZE + x];
+        }
+
+        // Update simulation
+        function update() {
+            const f = params.f;
+            const k = params.k;
+            const Du = params.Du;
+            const Dv = params.Dv;
+            const dt = params.dt;
+
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const i = y * GRID_SIZE + x;
+                    const u = gridU[i];
+                    const v = gridV[i];
+
+                    const lapU = laplacian(gridU, x, y);
+                    const lapV = laplacian(gridV, x, y);
+
+                    const uvv = u * v * v;
+
+                    nextU[i] = u + dt * (Du * lapU - uvv + f * (1 - u));
+                    nextV[i] = v + dt * (Dv * lapV + uvv - (f + k) * v);
+
+                    // Clamp values
+                    nextU[i] = Math.max(0, Math.min(1, nextU[i]));
+                    nextV[i] = Math.max(0, Math.min(1, nextV[i]));
+                }
+            }
+
+            // Swap buffers
+            [gridU, nextU] = [nextU, gridU];
+            [gridV, nextV] = [nextV, gridV];
+
+            iterations++;
+        }
+
+        // Render to canvas
+        function render() {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(GRID_SIZE, GRID_SIZE);
+
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                const v = 1 - gridV[i];
+                const [r, g, b] = colorSchemes[colorScheme](v);
+                imageData.data[i * 4] = Math.floor(r * 255);
+                imageData.data[i * 4 + 1] = Math.floor(g * 255);
+                imageData.data[i * 4 + 2] = Math.floor(b * 255);
+                imageData.data[i * 4 + 3] = 255;
+            }
+
+            // Scale up to canvas size
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = GRID_SIZE;
+            tempCanvas.height = GRID_SIZE;
+            tempCanvas.getContext('2d').putImageData(imageData, 0, 0);
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+        }
+
+        // Animation loop
+        function animate(time) {
+            // FPS calculation
+            frameCount++;
+            if (time - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = time;
+                document.getElementById('fpsText').textContent = fps;
+            }
+
+            if (running) {
+                for (let i = 0; i < params.speed; i++) {
+                    update();
+                }
+            }
+
+            render();
+            document.getElementById('iterText').textContent = iterations.toLocaleString();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Resize canvas
+        function resize() {
+            const container = canvas.parentElement;
+            const size = Math.min(container.clientWidth, container.clientHeight - 50);
+            canvas.width = size;
+            canvas.height = size;
+            document.getElementById('gridText').textContent = `${GRID_SIZE}x${GRID_SIZE}`;
+        }
+
+        // Paint on canvas
+        let isPainting = false;
+
+        function paint(e) {
+            if (!isPainting) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = GRID_SIZE / canvas.width;
+            const scaleY = GRID_SIZE / canvas.height;
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+            const r = params.brushRadius;
+
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (dx*dx + dy*dy <= r*r) {
+                        const px = (x + dx + GRID_SIZE) % GRID_SIZE;
+                        const py = (y + dy + GRID_SIZE) % GRID_SIZE;
+                        const i = py * GRID_SIZE + px;
+                        gridU[i] = 0.5;
+                        gridV[i] = 0.25;
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => { isPainting = true; paint(e); });
+        canvas.addEventListener('mousemove', paint);
+        canvas.addEventListener('mouseup', () => isPainting = false);
+        canvas.addEventListener('mouseleave', () => isPainting = false);
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isPainting = true;
+            const touch = e.touches[0];
+            paint({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            paint({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+        canvas.addEventListener('touchend', () => isPainting = false);
+
+        // UI Event Listeners
+        document.querySelectorAll('.panel-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
+
+        document.getElementById('playPauseBtn').addEventListener('click', () => {
+            running = !running;
+            document.getElementById('playPauseBtn').textContent = running ? 'Pause' : 'Play';
+            document.getElementById('statusText').textContent = running ? 'Running' : 'Paused';
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            update();
+            render();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            initRandom();
+        });
+
+        // Parameter sliders
+        document.getElementById('feedRate').addEventListener('input', (e) => {
+            params.f = e.target.value / 1000;
+            document.getElementById('fVal').textContent = params.f.toFixed(3);
+        });
+
+        document.getElementById('killRate').addEventListener('input', (e) => {
+            params.k = e.target.value / 1000;
+            document.getElementById('kVal').textContent = params.k.toFixed(3);
+        });
+
+        document.getElementById('diffusionU').addEventListener('input', (e) => {
+            params.Du = e.target.value / 100;
+            document.getElementById('duVal').textContent = params.Du.toFixed(2);
+        });
+
+        document.getElementById('diffusionV').addEventListener('input', (e) => {
+            params.Dv = e.target.value / 100;
+            document.getElementById('dvVal').textContent = params.Dv.toFixed(2);
+        });
+
+        document.getElementById('timeStep').addEventListener('input', (e) => {
+            params.dt = e.target.value / 10;
+            document.getElementById('dtVal').textContent = params.dt.toFixed(1);
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            params.speed = parseInt(e.target.value);
+            document.getElementById('speedVal').textContent = params.speed + 'x';
+        });
+
+        document.getElementById('brushRadius').addEventListener('input', (e) => {
+            params.brushRadius = parseInt(e.target.value);
+            document.getElementById('brushRadiusVal').textContent = params.brushRadius;
+        });
+
+        // Presets
+        document.getElementById('presetSelect').addEventListener('change', (e) => {
+            const preset = presets[e.target.value];
+            if (preset) {
+                document.getElementById('presetDesc').textContent = preset.desc;
+            }
+        });
+
+        document.getElementById('loadPresetBtn').addEventListener('click', () => {
+            const presetName = document.getElementById('presetSelect').value;
+            const preset = presets[presetName];
+            if (preset) {
+                params.f = preset.f;
+                params.k = preset.k;
+                document.getElementById('feedRate').value = preset.f * 1000;
+                document.getElementById('killRate').value = preset.k * 1000;
+                document.getElementById('fVal').textContent = preset.f.toFixed(3);
+                document.getElementById('kVal').textContent = preset.k.toFixed(3);
+                initRandom();
+            }
+        });
+
+        // Seed buttons
+        document.querySelectorAll('[data-seed]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const seed = btn.dataset.seed;
+                switch(seed) {
+                    case 'random': initRandom(); break;
+                    case 'center': initCenter(); break;
+                    case 'multi': initMulti(); break;
+                    case 'ring': initRing(); break;
+                }
+            });
+        });
+
+        // Color schemes
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                colorScheme = btn.dataset.scheme;
+            });
+        });
+
+        // Export resolution
+        document.querySelectorAll('.res-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                exportResolution = btn.dataset.res;
+            });
+        });
+
+        // Export
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            let size = GRID_SIZE;
+            if (exportResolution !== 'current') {
+                size = parseInt(exportResolution);
+            }
+
+            // Create export canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = size;
+            exportCanvas.height = size;
+            const ctx = exportCanvas.getContext('2d');
+
+            // Render at export size
+            const imageData = ctx.createImageData(GRID_SIZE, GRID_SIZE);
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                const v = 1 - gridV[i];
+                const [r, g, b] = colorSchemes[colorScheme](v);
+                imageData.data[i * 4] = Math.floor(r * 255);
+                imageData.data[i * 4 + 1] = Math.floor(g * 255);
+                imageData.data[i * 4 + 2] = Math.floor(b * 255);
+                imageData.data[i * 4 + 3] = 255;
+            }
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = GRID_SIZE;
+            tempCanvas.height = GRID_SIZE;
+            tempCanvas.getContext('2d').putImageData(imageData, 0, 0);
+
+            ctx.imageSmoothingEnabled = size > GRID_SIZE;
+            ctx.drawImage(tempCanvas, 0, 0, size, size);
+
+            // Download
+            const link = document.createElement('a');
+            link.download = `turing-pattern-${Date.now()}.png`;
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        initRandom();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
