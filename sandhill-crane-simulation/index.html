@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandhill Crane Boid Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #B8D4E3 30%, #8B7355 60%, #6B8E23 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .simulation-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            display: block;
+            background: linear-gradient(180deg,
+                #87CEEB 0%,
+                #B8D4E3 20%,
+                #D4C4A8 40%,
+                #8B7355 60%,
+                #6B8E23 80%,
+                #556B2F 100%);
+        }
+
+        .stats-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stats-overlay div {
+            margin: 4px 0;
+        }
+
+        .stats-overlay span {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .control-panel {
+            width: 320px;
+            background: rgba(45, 52, 54, 0.95);
+            color: #fff;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-panel h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: #FFD700;
+        }
+
+        .control-panel h1 span {
+            font-size: 12px;
+            color: #aaa;
+            font-weight: normal;
+            display: block;
+            font-style: italic;
+        }
+
+        .section {
+            margin: 20px 0;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+
+        .section h2 {
+            font-size: 14px;
+            color: #87CEEB;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .slider-group {
+            margin: 12px 0;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .slider-group label span {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #555;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #FFD700;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-group .tooltip {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #FFD700;
+            color: #333;
+        }
+
+        .btn-primary:hover {
+            background: #FFC000;
+        }
+
+        .btn-secondary {
+            background: #555;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #666;
+        }
+
+        .btn-secondary.active {
+            background: #87CEEB;
+            color: #333;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preset-buttons button {
+            text-align: left;
+            padding: 12px;
+            background: #3d4449;
+        }
+
+        .preset-buttons button:hover {
+            background: #4a5258;
+        }
+
+        .preset-buttons button small {
+            display: block;
+            color: #888;
+            font-weight: normal;
+            margin-top: 3px;
+        }
+
+        .chart-container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        #speedChart {
+            width: 100%;
+            height: 80px;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .toggle-group button {
+            flex: 1;
+            padding: 8px;
+            background: #3d4449;
+        }
+
+        .toggle-group button.active {
+            background: #87CEEB;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="simulation-area">
+            <canvas id="canvas"></canvas>
+            <div class="stats-overlay">
+                <div>FPS: <span id="fps">0</span></div>
+                <div>Boid Count: <span id="boidCount">0</span></div>
+                <div>Avg Speed: <span id="avgSpeed">0</span></div>
+                <div>Avg Neighbors: <span id="avgNeighbors">0</span></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <h1>Sandhill Crane Simulation
+                <span>Antigone canadensis</span>
+            </h1>
+
+            <div class="section">
+                <h2>Controls</h2>
+                <div class="button-group">
+                    <button id="pauseBtn" class="btn-primary">Pause</button>
+                    <button id="resetBtn" class="btn-secondary">Reset</button>
+                </div>
+                <div class="toggle-group">
+                    <button id="wrapBtn" class="active">Wrap</button>
+                    <button id="bounceBtn">Bounce</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Boid Parameters</h2>
+
+                <div class="slider-group">
+                    <label>Separation Weight <span id="sepVal">1.5</span></label>
+                    <input type="range" id="separation" min="0" max="5" step="0.1" value="1.5">
+                    <div class="tooltip">Keeps cranes from bumping into each other.</div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Alignment Weight <span id="aliVal">1.0</span></label>
+                    <input type="range" id="alignment" min="0" max="5" step="0.1" value="1.0">
+                    <div class="tooltip">Encourages cranes to fly in the same direction.</div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Cohesion Weight <span id="cohVal">1.0</span></label>
+                    <input type="range" id="cohesion" min="0" max="5" step="0.1" value="1.0">
+                    <div class="tooltip">Urges cranes to stay close to the center of the flock.</div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Neighbor Radius <span id="radVal">100</span>px</label>
+                    <input type="range" id="radius" min="10" max="300" step="5" value="100">
+                    <div class="tooltip">How far a crane can see its neighbors.</div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Max Speed <span id="speedVal">4</span></label>
+                    <input type="range" id="maxSpeed" min="1" max="10" step="0.5" value="4">
+                    <div class="tooltip">The maximum velocity of a crane in flight.</div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Boid Count <span id="countVal">80</span></label>
+                    <input type="range" id="boidCountSlider" min="10" max="300" step="10" value="80">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Behavioral Presets</h2>
+                <div class="preset-buttons">
+                    <button id="presetSchooling">
+                        Schooling
+                        <small>Migratory style - high alignment</small>
+                    </button>
+                    <button id="presetChaotic">
+                        Chaotic Swarm
+                        <small>Foraging style - scattered movement</small>
+                    </button>
+                    <button id="presetTight">
+                        Tight Cluster
+                        <small>Huddling style - high cohesion</small>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Speed Variance</h2>
+                <div class="chart-container">
+                    <canvas id="speedChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section" style="border-bottom: none;">
+                <p style="font-size: 11px; color: #666;">
+                    Move your mouse over the simulation to repel the cranes (predator simulation).
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const chartCanvas = document.getElementById('speedChart');
+        const chartCtx = chartCanvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.querySelector('.simulation-area');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Simulation state
+        let boids = [];
+        let isPaused = false;
+        let boundaryMode = 'wrap';
+        let mousePos = { x: -1000, y: -1000 };
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+        let speedHistory = [];
+
+        // Parameters
+        const params = {
+            separation: 1.5,
+            alignment: 1.0,
+            cohesion: 1.0,
+            radius: 100,
+            maxSpeed: 4,
+            boidCount: 80
+        };
+
+        // Boid class
+        class Boid {
+            constructor(x, y) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.trail = [];
+                this.trailLength = 8;
+            }
+
+            update(boids) {
+                // Get neighbors
+                const neighbors = [];
+                for (const other of boids) {
+                    if (other === this) continue;
+                    const dx = other.x - this.x;
+                    const dy = other.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < params.radius) {
+                        neighbors.push({ boid: other, dist, dx, dy });
+                    }
+                }
+
+                // Calculate steering forces
+                let sepX = 0, sepY = 0;
+                let aliX = 0, aliY = 0;
+                let cohX = 0, cohY = 0;
+
+                if (neighbors.length > 0) {
+                    for (const n of neighbors) {
+                        // Separation
+                        const factor = 1 - (n.dist / params.radius);
+                        sepX -= (n.dx / n.dist) * factor;
+                        sepY -= (n.dy / n.dist) * factor;
+
+                        // Alignment
+                        aliX += n.boid.vx;
+                        aliY += n.boid.vy;
+
+                        // Cohesion
+                        cohX += n.boid.x;
+                        cohY += n.boid.y;
+                    }
+
+                    // Normalize alignment
+                    aliX /= neighbors.length;
+                    aliY /= neighbors.length;
+
+                    // Cohesion: steer towards center
+                    cohX = cohX / neighbors.length - this.x;
+                    cohY = cohY / neighbors.length - this.y;
+                }
+
+                // Mouse repulsion (predator)
+                const mouseDx = this.x - mousePos.x;
+                const mouseDy = this.y - mousePos.y;
+                const mouseDist = Math.sqrt(mouseDx * mouseDx + mouseDy * mouseDy);
+                let mouseRepelX = 0, mouseRepelY = 0;
+                if (mouseDist < 150) {
+                    const factor = (1 - mouseDist / 150) * 3;
+                    mouseRepelX = (mouseDx / mouseDist) * factor;
+                    mouseRepelY = (mouseDy / mouseDist) * factor;
+                }
+
+                // Apply forces
+                this.vx += sepX * params.separation * 0.05;
+                this.vy += sepY * params.separation * 0.05;
+                this.vx += aliX * params.alignment * 0.02;
+                this.vy += aliY * params.alignment * 0.02;
+                this.vx += cohX * params.cohesion * 0.01;
+                this.vy += cohY * params.cohesion * 0.01;
+                this.vx += mouseRepelX;
+                this.vy += mouseRepelY;
+
+                // Limit speed
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > params.maxSpeed) {
+                    this.vx = (this.vx / speed) * params.maxSpeed;
+                    this.vy = (this.vy / speed) * params.maxSpeed;
+                }
+
+                // Minimum speed
+                if (speed < 1) {
+                    this.vx = (this.vx / speed) * 1;
+                    this.vy = (this.vy / speed) * 1;
+                }
+
+                // Update trail
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > this.trailLength) {
+                    this.trail.shift();
+                }
+
+                // Move
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Boundary handling
+                if (boundaryMode === 'wrap') {
+                    if (this.x < 0) this.x = canvas.width;
+                    if (this.x > canvas.width) this.x = 0;
+                    if (this.y < 0) this.y = canvas.height;
+                    if (this.y > canvas.height) this.y = 0;
+                } else {
+                    const margin = 50;
+                    const turnForce = 0.3;
+                    if (this.x < margin) this.vx += turnForce;
+                    if (this.x > canvas.width - margin) this.vx -= turnForce;
+                    if (this.y < margin) this.vy += turnForce;
+                    if (this.y > canvas.height - margin) this.vy -= turnForce;
+                }
+
+                return neighbors.length;
+            }
+
+            draw() {
+                const angle = Math.atan2(this.vy, this.vx);
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+
+                // Draw trail (feather motion)
+                if (this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(angle);
+
+                // Crane body (silhouette)
+                ctx.beginPath();
+                ctx.fillStyle = '#2d3436';
+
+                // Body
+                ctx.ellipse(0, 0, 12, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Neck
+                ctx.beginPath();
+                ctx.moveTo(8, 0);
+                ctx.quadraticCurveTo(16, -3, 18, -6);
+                ctx.lineTo(16, -5);
+                ctx.quadraticCurveTo(14, -2, 8, 0);
+                ctx.fillStyle = '#2d3436';
+                ctx.fill();
+
+                // Head with red crown
+                ctx.beginPath();
+                ctx.arc(18, -6, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#2d3436';
+                ctx.fill();
+
+                // Red crown patch
+                ctx.beginPath();
+                ctx.arc(18, -7, 2, 0, Math.PI, true);
+                ctx.fillStyle = '#c0392b';
+                ctx.fill();
+
+                // Wings
+                const wingFlap = Math.sin(Date.now() / 100 + this.x) * 0.3;
+                ctx.beginPath();
+                ctx.moveTo(-5, 0);
+                ctx.quadraticCurveTo(-2, -10 - wingFlap * 5, 5, -8 - wingFlap * 3);
+                ctx.lineTo(5, -5);
+                ctx.quadraticCurveTo(-2, -7, -5, 0);
+                ctx.fillStyle = '#636e72';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(-5, 0);
+                ctx.quadraticCurveTo(-2, 10 + wingFlap * 5, 5, 8 + wingFlap * 3);
+                ctx.lineTo(5, 5);
+                ctx.quadraticCurveTo(-2, 7, -5, 0);
+                ctx.fillStyle = '#636e72';
+                ctx.fill();
+
+                // Tail feathers
+                ctx.beginPath();
+                ctx.moveTo(-10, 0);
+                ctx.lineTo(-16, -3);
+                ctx.lineTo(-14, 0);
+                ctx.lineTo(-16, 3);
+                ctx.closePath();
+                ctx.fillStyle = '#2d3436';
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // Initialize boids
+        function initBoids(count) {
+            boids = [];
+            for (let i = 0; i < count; i++) {
+                boids.push(new Boid());
+            }
+        }
+
+        // Draw wetland elements
+        function drawBackground() {
+            // Gradient sky to marsh
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.3, '#B8D4E3');
+            gradient.addColorStop(0.5, '#D4C4A8');
+            gradient.addColorStop(0.7, '#8B7355');
+            gradient.addColorStop(0.85, '#6B8E23');
+            gradient.addColorStop(1, '#556B2F');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Marsh reeds silhouettes
+            ctx.fillStyle = 'rgba(47, 79, 47, 0.6)';
+            for (let x = 0; x < canvas.width; x += 30) {
+                const height = 40 + Math.sin(x * 0.1) * 20;
+                const sway = Math.sin(Date.now() / 1000 + x * 0.1) * 3;
+                ctx.beginPath();
+                ctx.moveTo(x, canvas.height);
+                ctx.quadraticCurveTo(x + sway, canvas.height - height / 2, x + sway * 0.5, canvas.height - height);
+                ctx.quadraticCurveTo(x + sway, canvas.height - height / 2, x + 3, canvas.height);
+                ctx.fill();
+            }
+
+            // Water reflection
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.1)';
+            ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.2);
+        }
+
+        // Update stats
+        function updateStats(totalNeighbors) {
+            document.getElementById('boidCount').textContent = boids.length;
+            document.getElementById('avgNeighbors').textContent = (totalNeighbors / boids.length).toFixed(1);
+
+            let totalSpeed = 0;
+            for (const boid of boids) {
+                totalSpeed += Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
+            }
+            const avgSpeed = totalSpeed / boids.length;
+            document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(2);
+
+            // Calculate speed variance for chart
+            let variance = 0;
+            for (const boid of boids) {
+                const speed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
+                variance += (speed - avgSpeed) ** 2;
+            }
+            variance = Math.sqrt(variance / boids.length);
+            speedHistory.push(variance);
+            if (speedHistory.length > 100) speedHistory.shift();
+        }
+
+        // Draw speed chart
+        function drawChart() {
+            chartCtx.fillStyle = '#1a1a1a';
+            chartCtx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+
+            if (speedHistory.length < 2) return;
+
+            const maxVal = Math.max(...speedHistory, 1);
+            chartCtx.beginPath();
+            chartCtx.moveTo(0, chartCanvas.height);
+
+            for (let i = 0; i < speedHistory.length; i++) {
+                const x = (i / 100) * chartCanvas.width;
+                const y = chartCanvas.height - (speedHistory[i] / maxVal) * chartCanvas.height * 0.9;
+                chartCtx.lineTo(x, y);
+            }
+
+            chartCtx.lineTo((speedHistory.length / 100) * chartCanvas.width, chartCanvas.height);
+            chartCtx.closePath();
+
+            const gradient = chartCtx.createLinearGradient(0, 0, 0, chartCanvas.height);
+            gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+            gradient.addColorStop(1, 'rgba(255, 215, 0, 0.1)');
+            chartCtx.fillStyle = gradient;
+            chartCtx.fill();
+
+            chartCtx.strokeStyle = '#FFD700';
+            chartCtx.lineWidth = 2;
+            chartCtx.stroke();
+        }
+
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // FPS calculation
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                document.getElementById('fps').textContent = fps;
+            }
+
+            if (isPaused) return;
+
+            drawBackground();
+
+            let totalNeighbors = 0;
+            for (const boid of boids) {
+                totalNeighbors += boid.update(boids);
+            }
+
+            for (const boid of boids) {
+                boid.draw();
+            }
+
+            updateStats(totalNeighbors);
+            drawChart();
+        }
+
+        // Event listeners
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            isPaused = !isPaused;
+            this.textContent = isPaused ? 'Resume' : 'Pause';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            initBoids(params.boidCount);
+            speedHistory = [];
+        });
+
+        document.getElementById('wrapBtn').addEventListener('click', function() {
+            boundaryMode = 'wrap';
+            this.classList.add('active');
+            document.getElementById('bounceBtn').classList.remove('active');
+        });
+
+        document.getElementById('bounceBtn').addEventListener('click', function() {
+            boundaryMode = 'bounce';
+            this.classList.add('active');
+            document.getElementById('wrapBtn').classList.remove('active');
+        });
+
+        // Slider handlers
+        const sliders = {
+            separation: { param: 'separation', display: 'sepVal' },
+            alignment: { param: 'alignment', display: 'aliVal' },
+            cohesion: { param: 'cohesion', display: 'cohVal' },
+            radius: { param: 'radius', display: 'radVal' },
+            maxSpeed: { param: 'maxSpeed', display: 'speedVal' },
+            boidCountSlider: { param: 'boidCount', display: 'countVal', reinit: true }
+        };
+
+        for (const [id, config] of Object.entries(sliders)) {
+            const slider = document.getElementById(id);
+            slider.addEventListener('input', function() {
+                params[config.param] = parseFloat(this.value);
+                document.getElementById(config.display).textContent = this.value;
+                if (config.reinit) {
+                    initBoids(params.boidCount);
+                }
+            });
+        }
+
+        // Presets
+        document.getElementById('presetSchooling').addEventListener('click', () => {
+            params.separation = 1.0;
+            params.alignment = 3.5;
+            params.cohesion = 2.0;
+            params.radius = 150;
+            updateSliders();
+        });
+
+        document.getElementById('presetChaotic').addEventListener('click', () => {
+            params.separation = 2.0;
+            params.alignment = 0.5;
+            params.cohesion = 0.5;
+            params.radius = 40;
+            updateSliders();
+        });
+
+        document.getElementById('presetTight').addEventListener('click', () => {
+            params.separation = 1.5;
+            params.alignment = 1.5;
+            params.cohesion = 4.0;
+            params.radius = 120;
+            updateSliders();
+        });
+
+        function updateSliders() {
+            document.getElementById('separation').value = params.separation;
+            document.getElementById('sepVal').textContent = params.separation;
+            document.getElementById('alignment').value = params.alignment;
+            document.getElementById('aliVal').textContent = params.alignment;
+            document.getElementById('cohesion').value = params.cohesion;
+            document.getElementById('cohVal').textContent = params.cohesion;
+            document.getElementById('radius').value = params.radius;
+            document.getElementById('radVal').textContent = params.radius;
+        }
+
+        // Mouse tracking
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left;
+            mousePos.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mousePos.x = -1000;
+            mousePos.y = -1000;
+        });
+
+        // Initialize
+        chartCanvas.width = chartCanvas.parentElement.clientWidth - 20;
+        chartCanvas.height = 80;
+        initBoids(params.boidCount);
+        animate();
+    </script>
+</body>
+</html>
