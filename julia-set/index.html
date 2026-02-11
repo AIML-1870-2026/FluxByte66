@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Julia Set Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-left">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#ff2222" stroke-width="1.5" fill="none"/>
+          <circle cx="12" cy="12" r="5" stroke="#8b0000" stroke-width="1" fill="none"/>
+          <circle cx="12" cy="12" r="2" fill="#ff2222"/>
+        </svg>
+      </div>
+      <h1>Julia Set Explorer</h1>
+    </div>
+    <div class="header-right">
+      <button id="btn-export" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1v9M4 6l4 4 4-4M2 12v2h12v-2"/>
+        </svg>
+        Export PNG
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main">
+    <!-- Julia Set Canvas Area -->
+    <section id="canvas-area">
+      <canvas id="julia-canvas"></canvas>
+      <div id="loading-indicator" class="hidden">
+        <span class="pulse-dot"></span>
+      </div>
+      <div id="coord-tooltip" class="hidden"></div>
+    </section>
+
+    <!-- Control Panel -->
+    <aside id="control-panel">
+      <div class="panel-scroll">
+
+        <!-- Parameter c -->
+        <section class="panel-section">
+          <h2 class="section-title">Parameter c</h2>
+          <div class="control-group">
+            <label>Real part</label>
+            <div class="slider-row">
+              <input type="range" id="slider-real" min="-2" max="2" step="0.001" value="-0.7">
+              <input type="number" id="input-real" min="-2" max="2" step="0.001" value="-0.7">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Imaginary part</label>
+            <div class="slider-row">
+              <input type="range" id="slider-imag" min="-2" max="2" step="0.001" value="0.27">
+              <input type="number" id="input-imag" min="-2" max="2" step="0.001" value="0.27">
+            </div>
+          </div>
+        </section>
+
+        <!-- Render Settings -->
+        <section class="panel-section">
+          <h2 class="section-title">Render Settings</h2>
+          <div class="control-group">
+            <label>Max Iterations <span id="val-iterations" class="val-display">200</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-iterations" min="50" max="1000" step="1" value="200">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Zoom <span id="val-zoom" class="val-display">1.0x</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-zoom" min="-1" max="3.912" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Pan X <span id="val-panx" class="val-display">0.00</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-panx" min="-2" max="2" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Pan Y <span id="val-pany" class="val-display">0.00</span></label>
+            <div class="slider-row">
+              <input type="range" id="slider-pany" min="-2" max="2" step="0.01" value="0">
+            </div>
+          </div>
+          <button id="btn-reset-view" class="btn btn-secondary">Reset View</button>
+        </section>
+
+        <!-- Color -->
+        <section class="panel-section">
+          <h2 class="section-title">Color</h2>
+          <div class="control-group">
+            <label>Palette</label>
+            <select id="select-palette">
+              <option value="inferno">Inferno</option>
+              <option value="crimson-night" selected>Crimson Night</option>
+              <option value="ice-fire">Ice &amp; Fire</option>
+              <option value="monochrome">Monochrome</option>
+              <option value="neon-abyss">Neon Abyss</option>
+              <option value="gold-vein">Gold Vein</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+
+          <!-- Custom Color Editor -->
+          <div class="control-group">
+            <button id="btn-toggle-custom" class="btn-accordion">
+              Custom Color Editor
+              <svg class="accordion-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                <path d="M3 4.5l3 3 3-3"/>
+              </svg>
+            </button>
+            <div id="custom-color-editor" class="accordion-body hidden">
+              <div id="gradient-preview" class="gradient-bar"></div>
+              <div id="color-stops-list"></div>
+              <button id="btn-add-stop" class="btn btn-small">+ Add Stop</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Presets Gallery -->
+        <section class="panel-section">
+          <h2 class="section-title">Presets Gallery</h2>
+          <div id="presets-grid" class="presets-grid"></div>
+        </section>
+
+        <!-- Mandelbrot Navigator -->
+        <section class="panel-section">
+          <h2 class="section-title">Mandelbrot Navigator</h2>
+          <div class="mandelbrot-container">
+            <canvas id="mandelbrot-canvas" width="240" height="180"></canvas>
+            <div class="mandelbrot-caption">Click to set c</div>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
