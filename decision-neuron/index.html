@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decision Neuron — Relax vs. Sleep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-left">
+      <svg class="header-icon" width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="#ff1a1a" stroke-width="1.5" fill="none" opacity="0.6"/>
+        <circle cx="14" cy="14" r="6" stroke="#ff1a1a" stroke-width="1" fill="none" opacity="0.3"/>
+        <circle cx="14" cy="14" r="3" fill="#ff1a1a"/>
+        <line x1="14" y1="2" x2="14" y2="8" stroke="#ff1a1a" stroke-width="1.2" opacity="0.5"/>
+        <line x1="14" y1="20" x2="14" y2="26" stroke="#ff1a1a" stroke-width="1.2" opacity="0.5"/>
+        <line x1="2" y1="14" x2="8" y2="14" stroke="#ff1a1a" stroke-width="1.2" opacity="0.5"/>
+        <line x1="20" y1="14" x2="26" y2="14" stroke="#ff1a1a" stroke-width="1.2" opacity="0.5"/>
+      </svg>
+      <h1>Decision Neuron</h1>
+      <span class="header-subtitle">Relax Before Bed vs. Get More Sleep</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main">
+    <div class="top-row">
+      <!-- Neuron Visualization -->
+      <div class="neuron-area">
+        <canvas id="neuron-canvas" aria-label="Single neuron visualization"></canvas>
+      </div>
+
+      <!-- Controls Panel -->
+      <aside id="controls-panel">
+        <!-- Live Decision -->
+        <div class="live-decision">
+          <div class="live-decision-row">
+            <div class="live-col">
+              <div class="live-decision-label">Neuron Says</div>
+              <div class="live-decision-result yes" id="live-result">Relax</div>
+              <div class="live-decision-prob" id="live-prob">P = 50.0%</div>
+            </div>
+            <div class="live-divider"></div>
+            <div class="live-col">
+              <div class="live-decision-label">Should Be</div>
+              <div class="live-decision-result yes" id="live-should">Relax</div>
+              <div class="live-decision-prob" id="live-should-score">Score: +0.00</div>
+            </div>
+          </div>
+          <div class="live-match" id="live-match">
+            <span class="live-match-icon" id="live-match-icon"></span>
+            <span id="live-match-text">Agrees</span>
+          </div>
+          <div class="live-prob-bar">
+            <div class="live-prob-fill yes" id="live-prob-fill"></div>
+          </div>
+        </div>
+
+        <!-- Input Sliders -->
+        <section class="control-section">
+          <h2 class="section-title">Inputs</h2>
+          <div class="slider-group">
+            <label>Stress Level <span id="val-stress" class="val-display">5.0</span></label>
+            <input type="range" id="slider-stress" min="0" max="10" step="0.1" value="5" aria-label="Stress Level">
+          </div>
+          <div class="slider-group">
+            <label>Hours Until Wake-Up <span id="val-hours" class="val-display">8.0</span></label>
+            <input type="range" id="slider-hours" min="4" max="12" step="0.1" value="8" aria-label="Hours Until Wake-Up">
+          </div>
+          <div class="slider-group">
+            <label>Mental Energy <span id="val-mental" class="val-display">5.0</span></label>
+            <input type="range" id="slider-mental" min="0" max="10" step="0.1" value="5" aria-label="Mental Energy">
+          </div>
+          <div class="slider-group">
+            <label>Sleep Debt <span id="val-debt" class="val-display">3.0</span></label>
+            <input type="range" id="slider-debt" min="0" max="10" step="0.1" value="3" aria-label="Sleep Debt">
+          </div>
+          <div class="slider-group">
+            <label>Tomorrow's Demands <span id="val-demands" class="val-display">5.0</span></label>
+            <input type="range" id="slider-demands" min="0" max="10" step="0.1" value="5" aria-label="Tomorrow's Demands">
+          </div>
+          <div class="slider-group">
+            <label>Physical Tiredness <span id="val-tired" class="val-display">5.0</span></label>
+            <input type="range" id="slider-tired" min="0" max="10" step="0.1" value="5" aria-label="Physical Tiredness">
+          </div>
+        </section>
+
+        <!-- Add Training Point -->
+        <section class="control-section">
+          <h2 class="section-title">Add Training Point</h2>
+          <p class="section-hint">Use current slider values as a training example.</p>
+          <div class="add-point-row">
+            <button id="btn-add-yes" class="btn btn-yes btn-add" aria-label="Add as Yes, relax">+ Relax</button>
+            <button id="btn-add-no" class="btn btn-no btn-add" aria-label="Add as No, sleep">+ Sleep</button>
+          </div>
+        </section>
+
+        <!-- Training -->
+        <section class="control-section">
+          <h2 class="section-title">Training</h2>
+          <button id="btn-step" class="btn btn-action" aria-label="Train one iteration">Step (1 Iteration)</button>
+          <button id="btn-train" class="btn btn-action btn-primary" aria-label="Train ten iterations">Train (10 Steps)</button>
+          <div id="train-progress" class="train-progress hidden">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <span class="progress-text" id="progress-text">Training... 0/10</span>
+          </div>
+          <button id="btn-reset" class="btn btn-action btn-danger" aria-label="Reset all training data">Reset All</button>
+        </section>
+
+        <!-- Settings -->
+        <section class="control-section">
+          <h2 class="section-title">Settings</h2>
+          <div class="slider-group">
+            <label>Learning Rate <span id="val-lr" class="val-display">0.10</span></label>
+            <input type="range" id="slider-lr" min="0.01" max="1.0" step="0.01" value="0.1" aria-label="Learning rate">
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Metrics Panel -->
+    <div id="metrics-panel" class="metrics-panel">
+      <div class="metric">
+        <span class="metric-label">Step</span>
+        <span class="metric-value" id="metric-step">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Accuracy</span>
+        <span class="metric-value" id="metric-accuracy">&mdash;</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Points</span>
+        <span class="metric-value" id="metric-points">0 (0 Yes, 0 No)</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">w<sub>1</sub> Stress</span>
+        <span class="metric-value weight-val" id="w-stress">+0.00</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">w<sub>2</sub> Hours</span>
+        <span class="metric-value weight-val" id="w-hours">+0.00</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">w<sub>3</sub> Mental</span>
+        <span class="metric-value weight-val" id="w-mental">+0.00</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">w<sub>4</sub> Debt</span>
+        <span class="metric-value weight-val" id="w-debt">+0.00</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">w<sub>5</sub> Demands</span>
+        <span class="metric-value weight-val" id="w-demands">+0.00</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">w<sub>6</sub> Tired</span>
+        <span class="metric-value weight-val" id="w-tired">+0.00</span>
+      </div>
+      <div class="metric metric-weight">
+        <span class="metric-label">Bias</span>
+        <span class="metric-value weight-val" id="w-bias">+0.00</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Confirmation Dialog -->
+  <div id="confirm-overlay" class="confirm-overlay hidden">
+    <div class="confirm-dialog" role="alertdialog" aria-label="Confirm reset">
+      <p>Clear all points and reset weights?</p>
+      <div class="confirm-buttons">
+        <button id="confirm-yes" class="btn btn-danger">Reset</button>
+        <button id="confirm-no" class="btn btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
