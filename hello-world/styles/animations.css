@@ -1,0 +1,100 @@
+/* === Background Gradient Animation === */
+body {
+    animation: bg-shift 8s ease-in-out infinite;
+}
+
+@keyframes bg-shift {
+    0%, 100% { background: var(--bg-dark); }
+    50% { background: #12080C; }
+}
+
+/* === Text Glow Pulse === */
+.title.animate {
+    animation: entrance-title 1.5s ease-out forwards, glow-pulse 2s ease-in-out 1.5s infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        text-shadow:
+            0 0 10px var(--glow-color),
+            0 0 20px var(--glow-color),
+            0 0 40px var(--red-secondary);
+    }
+    50% {
+        text-shadow:
+            0 0 15px var(--glow-color),
+            0 0 30px var(--glow-color),
+            0 0 60px var(--red-secondary),
+            0 0 80px var(--red-secondary);
+    }
+}
+
+/* === Entrance Animations === */
+@keyframes entrance-title {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes entrance-line {
+    from {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    to {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+@keyframes entrance-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Staggered entrance classes */
+.accent-line.animate {
+    animation: entrance-line 1.5s ease-out forwards, line-breathe 2s ease-in-out 1.5s infinite;
+}
+
+.username.animate {
+    animation: entrance-fade-up 1.5s ease-out forwards;
+}
+
+.message.animate {
+    animation: entrance-fade-up 1.5s ease-out forwards;
+}
+
+/* === Accent Line Breathing === */
+@keyframes line-breathe {
+    0%, 100% {
+        box-shadow: 0 0 8px var(--glow-color), 0 0 16px var(--glow-color);
+    }
+    50% {
+        box-shadow: 0 0 12px var(--glow-color), 0 0 24px var(--glow-color), 0 0 36px var(--red-secondary);
+    }
+}
+
+/* === Glitch Effect === */
+@keyframes glitch-top {
+    0% { transform: translate(-2px, -1px); }
+    50% { transform: translate(2px, 1px); }
+    100% { transform: translate(-1px, -2px); }
+}
+
+@keyframes glitch-bottom {
+    0% { transform: translate(2px, 1px); }
+    50% { transform: translate(-2px, -1px); }
+    100% { transform: translate(1px, 2px); }
+}

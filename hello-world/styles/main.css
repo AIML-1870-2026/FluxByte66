@@ -1,0 +1,173 @@
+/* === Reset & Base === */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --red-primary: #FF0033;
+    --red-secondary: #CC0028;
+    --red-accent: #FF3366;
+    --bg-dark: #0A0A0F;
+    --bg-secondary: #1A1A24;
+    --text-primary: #FFFFFF;
+    --text-secondary: #E0E0E8;
+    --glow-color: #FF0033;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Orbitron', 'Exo 2', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === Particle Canvas === */
+#particles {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+/* === Scanline Overlay === */
+.scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.08) 2px,
+        rgba(0, 0, 0, 0.08) 4px
+    );
+}
+
+/* === Main Container === */
+.container {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+}
+
+/* === Title === */
+.title {
+    font-size: clamp(2.2rem, 8vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: var(--text-primary);
+    text-shadow:
+        0 0 10px var(--glow-color),
+        0 0 20px var(--glow-color),
+        0 0 40px var(--red-secondary);
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+/* === Glitch Effect on Hover === */
+.glitch {
+    position: relative;
+    cursor: default;
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.glitch::before {
+    color: var(--red-accent);
+    clip-path: inset(0 0 60% 0);
+}
+
+.glitch::after {
+    color: var(--red-secondary);
+    clip-path: inset(40% 0 0 0);
+}
+
+.glitch:hover::before {
+    opacity: 0.8;
+    animation: glitch-top 0.3s steps(2) infinite;
+}
+
+.glitch:hover::after {
+    opacity: 0.8;
+    animation: glitch-bottom 0.3s steps(2) infinite;
+}
+
+/* === Accent Line === */
+.accent-line {
+    width: 120px;
+    height: 2px;
+    margin: 1.5rem auto;
+    background: var(--red-primary);
+    box-shadow: 0 0 8px var(--glow-color), 0 0 16px var(--glow-color);
+    border-radius: 1px;
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+/* === Username === */
+.username {
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    color: var(--red-accent);
+    text-shadow: 0 0 8px var(--glow-color);
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* === Message === */
+.message {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 0.75rem;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .title, .accent-line, .username, .message {
+        opacity: 1;
+        transform: none;
+    }
+
+    .scanlines {
+        display: none;
+    }
+}
+
+/* === Responsive === */
+@media (max-width: 480px) {
+    .container {
+        padding: 1.5rem;
+    }
+
+    .accent-line {
+        width: 80px;
+    }
+}
