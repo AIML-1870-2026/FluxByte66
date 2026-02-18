@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RGB Color Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface-elevated: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #e63946;
+      --accent-hover: #ff6b6b;
+      --text: #f0f0f0;
+      --text-secondary: #888888;
+      --text-muted: #444444;
+      --pool-bg: #050a12;
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-ui: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .app-header {
+      padding: 16px 24px;
+      border-bottom: 2px solid var(--accent);
+    }
+    .app-header h1 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    /* Tab Bar */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      background: var(--surface-elevated);
+      color: #666;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+    .tab-btn:hover:not(.active) {
+      color: var(--text-secondary);
+    }
+
+    /* Controls Strip */
+    .controls-strip {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .slider-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slider-label {
+      font-weight: 700;
+      font-size: 14px;
+      width: 16px;
+      text-align: center;
+    }
+    .slider-label.r { color: #ff4444; }
+    .slider-label.g { color: #44ff44; }
+    .slider-label.b { color: #4444ff; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(255,255,255,0.3);
+    }
+    input[type="range"].r-slider::-webkit-slider-thumb { box-shadow: 0 0 8px rgba(255,68,68,0.6); }
+    input[type="range"].g-slider::-webkit-slider-thumb { box-shadow: 0 0 8px rgba(68,255,68,0.6); }
+    input[type="range"].b-slider::-webkit-slider-thumb { box-shadow: 0 0 8px rgba(68,68,255,0.6); }
+
+    .slider-value {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      width: 32px;
+      color: var(--text-secondary);
+    }
+
+    .mix-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    .mix-swatch {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .mix-hex {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .mix-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .pick-btn {
+      font-size: 12px;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--accent);
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      transition: all 0.2s;
+    }
+    .pick-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Pool Canvas */
+    .pool-container {
+      position: relative;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 0 24px 24px;
+      background: var(--bg);
+    }
+    .pool-canvas {
+      width: 100%;
+      max-width: 900px;
+      height: 420px;
+      border-radius: 12px;
+      cursor: crosshair;
+      display: block;
+    }
+
+    /* Palette Tab */
+    .palette-tab {
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .base-color-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .base-color-bar label {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .base-swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      border: 2px solid var(--accent);
+    }
+    .hex-input {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      width: 100px;
+    }
+    .hex-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .change-link {
+      font-size: 13px;
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .change-link:hover { color: var(--accent-hover); }
+
+    /* Harmony Selector */
+    .harmony-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .harmony-btn {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .harmony-btn.active {
+      border-color: var(--accent);
+      color: var(--text);
+      background: var(--surface-elevated);
+    }
+    .harmony-btn:hover:not(.active) {
+      border-color: #444;
+    }
+
+    /* Swatch Grid */
+    .swatch-grid {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .swatch-card {
+      width: 110px;
+      text-align: center;
+      animation: swatchIn 0.3s ease forwards;
+      opacity: 0;
+    }
+    @keyframes swatchIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .swatch-fill {
+      width: 110px;
+      height: 140px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      margin-bottom: 8px;
+    }
+    .swatch-fill.base-outline {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .swatch-hex {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .copy-btn {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      position: relative;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      color: var(--text-secondary);
+      border-color: #444;
+    }
+
+    /* Export Bar */
+    .export-bar {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .export-btn {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .export-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface-elevated);
+      color: var(--text);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: tooltipFade 1.2s ease forwards;
+    }
+    @keyframes tooltipFade {
+      0% { opacity: 0; transform: translateX(-50%) translateY(4px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* CVD Simulator */
+    .cvd-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .cvd-bar label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .cvd-select {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+    .cvd-select:focus { border-color: var(--accent); }
+    .cvd-badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      background: rgba(230, 57, 70, 0.12);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .cvd-preview {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .cvd-preview-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .cvd-preview-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* Swatch dual display for CVD */
+    .swatch-dual {
+      display: flex;
+      gap: 2px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      margin-bottom: 8px;
+    }
+    .swatch-dual .swatch-half {
+      height: 140px;
+      flex: 1;
+    }
+    .swatch-dual .swatch-half:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+    .swatch-dual .swatch-half:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+    .swatch-dual.base-outline {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .swatch-cvd-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .pool-canvas { height: 300px; }
+      .controls-strip { gap: 12px; }
+      .mix-display { margin-left: 0; }
+      .swatch-card { width: 90px; }
+      .swatch-fill { width: 90px; height: 110px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
+
+    // ─── Utils ────────────────────────────────────────────────
+
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function hexToRgb(hex) {
+      hex = hex.replace(/^#/, '');
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      if (hex.length !== 6) return null;
+      const n = parseInt(hex, 16);
+      if (isNaN(n)) return null;
+      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      return { h: h * 360, s, l };
+    }
+
+    function hslToRgb(h, s, l) {
+      h = ((h % 360) + 360) % 360;
+      h /= 360;
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+
+    // ─── Color Blindness Simulation ──────────────────────────
+    // Matrices from Brettel/Machado research for CVD simulation
+    const CVD_MATRICES = {
+      normal: null,
+      protanopia: [
+        0.152286, 1.052583, -0.204868,
+        0.114503, 0.786281, 0.099216,
+        -0.003882, -0.048116, 1.051998
+      ],
+      deuteranopia: [
+        0.367322, 0.860646, -0.227968,
+        0.280085, 0.672501, 0.047413,
+        -0.011820, 0.042940, 0.968881
+      ],
+      tritanopia: [
+        1.255528, -0.076749, -0.178779,
+        -0.078411, 0.930809, 0.147602,
+        0.004733, 0.691367, 0.303900
+      ],
+      achromatopsia: [
+        0.2126, 0.7152, 0.0722,
+        0.2126, 0.7152, 0.0722,
+        0.2126, 0.7152, 0.0722
+      ]
+    };
+
+    const CVD_LABELS = {
+      normal: 'Normal Vision',
+      protanopia: 'Protanopia (no red)',
+      deuteranopia: 'Deuteranopia (no green)',
+      tritanopia: 'Tritanopia (no blue)',
+      achromatopsia: 'Achromatopsia (monochrome)'
+    };
+
+    function simulateCVD(r, g, b, type) {
+      if (type === 'normal' || !CVD_MATRICES[type]) return { r, g, b };
+      const m = CVD_MATRICES[type];
+      return {
+        r: Math.max(0, Math.min(255, Math.round(m[0] * r + m[1] * g + m[2] * b))),
+        g: Math.max(0, Math.min(255, Math.round(m[3] * r + m[4] * g + m[5] * b))),
+        b: Math.max(0, Math.min(255, Math.round(m[6] * r + m[7] * g + m[8] * b)))
+      };
+    }
+
+    function generatePalette(baseR, baseG, baseB, harmonyType) {
+      const hsl = rgbToHsl(baseR, baseG, baseB);
+      const colors = [{ r: baseR, g: baseG, b: baseB }];
+      const offsets = {
+        complementary: [180],
+        analogous: [-60, -30, 30, 60],
+        triadic: [120, 240],
+        split: [150, 210]
+      };
+      for (const offset of offsets[harmonyType]) {
+        const rgb = hslToRgb(hsl.h + offset, hsl.s, hsl.l);
+        colors.push(rgb);
+      }
+      return colors;
+    }
+
+    // ─── Wave Params ──────────────────────────────────────────
+
+    const WAVE_COMPONENTS = [
+      { amplitude: 3.5, frequency: 0.025, angle: 0.3, speed: 1.2 },
+      { amplitude: 2.5, frequency: 0.035, angle: 1.8, speed: 0.8 },
+      { amplitude: 2.0, frequency: 0.018, angle: 2.9, speed: 1.5 },
+      { amplitude: 1.5, frequency: 0.045, angle: 4.1, speed: 0.6 },
+    ];
+
+    // ─── Pool Canvas Component ────────────────────────────────
+
+    function PoolCanvas({ r, g, b, onRChange, onGChange, onBChange, onPickColor }) {
+      const canvasRef = useRef(null);
+      const animRef = useRef(null);
+      const timeRef = useRef(0);
+      const draggingRef = useRef(null);
+      const orbPositionsRef = useRef(null);
+      const ripplesRef = useRef([]);
+      const sizeRef = useRef({ w: 0, h: 0 });
+      const dprRef = useRef(1);
+      const rgbRef = useRef({ r, g, b });
+      const pickFlashRef = useRef(0);
+
+      rgbRef.current = { r, g, b };
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        const resize = () => {
+          const rect = canvas.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          dprRef.current = dpr;
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+          sizeRef.current = { w: rect.width, h: rect.height };
+
+          if (!orbPositionsRef.current) {
+            orbPositionsRef.current = {
+              r: { x: rect.width * 0.25, y: rect.height * 0.3 },
+              g: { x: rect.width * 0.5, y: rect.height * 0.7 },
+              b: { x: rect.width * 0.75, y: rect.height * 0.3 },
+            };
+          }
+        };
+        resize();
+        window.addEventListener('resize', resize);
+        return () => window.removeEventListener('resize', resize);
+      }, []);
+
+      // Sync orb X positions when sliders change (only when not dragging)
+      useEffect(() => {
+        if (!orbPositionsRef.current || draggingRef.current) return;
+        const w = sizeRef.current.w;
+        orbPositionsRef.current.r.x = (r / 255) * (w - 80) + 40;
+      }, [r]);
+      useEffect(() => {
+        if (!orbPositionsRef.current || draggingRef.current) return;
+        const w = sizeRef.current.w;
+        orbPositionsRef.current.g.x = (g / 255) * (w - 80) + 40;
+      }, [g]);
+      useEffect(() => {
+        if (!orbPositionsRef.current || draggingRef.current) return;
+        const w = sizeRef.current.w;
+        orbPositionsRef.current.b.x = (b / 255) * (w - 80) + 40;
+      }, [b]);
+
+      // Animation loop
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        let lastTime = performance.now();
+
+        const draw = (now) => {
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+          timeRef.current += dt;
+          const t = timeRef.current;
+
+          const dpr = dprRef.current;
+          const { w, h } = sizeRef.current;
+          const cw = w * dpr;
+          const ch = h * dpr;
+          ctx.save();
+          ctx.scale(dpr, dpr);
+
+          // Background
+          ctx.fillStyle = '#050a12';
+          ctx.fillRect(0, 0, w, h);
+
+          // Wave rendering
+          const step = 6;
+          for (let y = 0; y < h; y += step) {
+            for (let x = 0; x < w; x += step) {
+              let waveH = 0;
+              for (const wc of WAVE_COMPONENTS) {
+                waveH += wc.amplitude * Math.sin(
+                  wc.frequency * (x * Math.cos(wc.angle) + y * Math.sin(wc.angle)) - wc.speed * t
+                );
+              }
+              const brightness = 8 + waveH * 2.5;
+              if (brightness > 10) {
+                ctx.fillStyle = `rgba(100, 140, 180, ${(brightness - 8) * 0.008})`;
+                ctx.fillRect(x, y, step, step);
+              }
+            }
+          }
+
+          const orbs = orbPositionsRef.current;
+          if (!orbs) { ctx.restore(); animRef.current = requestAnimationFrame(draw); return; }
+          const { r: cr, g: cg, b: cb } = rgbRef.current;
+
+          // Color bleed from orbs
+          ctx.globalCompositeOperation = 'screen';
+          const bleedRadius = 120;
+          const orbData = [
+            { pos: orbs.r, color: [cr, 0, 0] },
+            { pos: orbs.g, color: [0, cg, 0] },
+            { pos: orbs.b, color: [0, 0, cb] },
+          ];
+          for (const od of orbData) {
+            const grad = ctx.createRadialGradient(od.pos.x, od.pos.y, 10, od.pos.x, od.pos.y, bleedRadius);
+            grad.addColorStop(0, `rgba(${od.color[0]}, ${od.color[1]}, ${od.color[2]}, 0.4)`);
+            grad.addColorStop(1, `rgba(${od.color[0]}, ${od.color[1]}, ${od.color[2]}, 0)`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(od.pos.x - bleedRadius, od.pos.y - bleedRadius, bleedRadius * 2, bleedRadius * 2);
+          }
+          ctx.globalCompositeOperation = 'source-over';
+
+          // Shimmer flecks near orbs
+          for (const od of orbData) {
+            for (let i = 0; i < 3; i++) {
+              const angle = t * (0.5 + i * 0.3) + i * 2.1;
+              const dist = 25 + Math.sin(t * 1.5 + i) * 10;
+              const fx = od.pos.x + Math.cos(angle) * dist;
+              const fy = od.pos.y + Math.sin(angle) * dist;
+              const alpha = 0.15 + Math.sin(t * 3 + i * 1.7) * 0.1;
+              ctx.beginPath();
+              ctx.arc(fx, fy, 1.5, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+              ctx.fill();
+            }
+          }
+
+          // Ripple rings
+          ripplesRef.current = ripplesRef.current.filter(rip => rip.age < 0.8);
+          for (const rip of ripplesRef.current) {
+            rip.age += dt;
+            const progress = rip.age / 0.8;
+            const radius = 20 + progress * 80;
+            const alpha = (1 - progress) * 0.3;
+            ctx.beginPath();
+            ctx.arc(rip.x, rip.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Mix circle (center)
+          const cx = w / 2;
+          const cy = h / 2;
+          const mixR = 35;
+          const pulse = 1 + Math.sin(t * Math.PI) * 0.03;
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(pulse, pulse);
+          // Glow
+          const mixGlow = ctx.createRadialGradient(0, 0, mixR - 5, 0, 0, mixR + 20);
+          mixGlow.addColorStop(0, `rgba(255, 255, 255, 0.12)`);
+          mixGlow.addColorStop(1, `rgba(255, 255, 255, 0)`);
+          ctx.fillStyle = mixGlow;
+          ctx.fillRect(-mixR - 20, -mixR - 20, (mixR + 20) * 2, (mixR + 20) * 2);
+          // Circle fill
+          ctx.beginPath();
+          ctx.arc(0, 0, mixR, 0, Math.PI * 2);
+          ctx.fillStyle = `rgb(${cr}, ${cg}, ${cb})`;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Label
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.font = '11px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('MIX', 0, mixR + 18);
+          ctx.restore();
+
+          // Orbs
+          const orbRadius = 20;
+          const orbMeta = [
+            { key: 'r', label: 'R', pos: orbs.r, color: `rgb(${cr}, 0, 0)`, glow: `rgba(${cr}, 0, 0, 0.6)` },
+            { key: 'g', label: 'G', pos: orbs.g, color: `rgb(0, ${cg}, 0)`, glow: `rgba(0, ${cg}, 0, 0.6)` },
+            { key: 'b', label: 'B', pos: orbs.b, color: `rgb(0, 0, ${cb})`, glow: `rgba(0, 0, ${cb}, 0.6)` },
+          ];
+          for (const om of orbMeta) {
+            ctx.save();
+            ctx.shadowColor = om.glow;
+            ctx.shadowBlur = 16;
+            ctx.beginPath();
+            ctx.arc(om.pos.x, om.pos.y, orbRadius, 0, Math.PI * 2);
+            ctx.fillStyle = om.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(om.label, om.pos.x, om.pos.y);
+            ctx.restore();
+          }
+
+          // Pick flash
+          if (pickFlashRef.current > 0) {
+            pickFlashRef.current -= dt;
+            const alpha = Math.max(0, pickFlashRef.current / 0.3) * 0.15;
+            ctx.fillStyle = `rgba(230, 57, 70, ${alpha})`;
+            ctx.fillRect(0, 0, w, h);
+          }
+
+          ctx.restore();
+          animRef.current = requestAnimationFrame(draw);
+        };
+
+        animRef.current = requestAnimationFrame(draw);
+        return () => cancelAnimationFrame(animRef.current);
+      }, []);
+
+      // Drag handling
+      const getCanvasPos = useCallback((e) => {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      }, []);
+
+      const handlePointerDown = useCallback((e) => {
+        const pos = getCanvasPos(e);
+        const orbs = orbPositionsRef.current;
+        if (!orbs) return;
+
+        const orbRadius = 24;
+        for (const key of ['r', 'g', 'b']) {
+          const orb = orbs[key];
+          const dx = pos.x - orb.x;
+          const dy = pos.y - orb.y;
+          if (dx * dx + dy * dy < orbRadius * orbRadius) {
+            draggingRef.current = key;
+            e.preventDefault();
+            return;
+          }
+        }
+
+        // Click on pool = pick color
+        onPickColor();
+        pickFlashRef.current = 0.3;
+      }, [getCanvasPos, onPickColor]);
+
+      useEffect(() => {
+        const handleMove = (e) => {
+          if (!draggingRef.current) return;
+          e.preventDefault();
+          const pos = getCanvasPos(e);
+          const { w, h } = sizeRef.current;
+          const orbs = orbPositionsRef.current;
+          const key = draggingRef.current;
+
+          const clampedX = Math.max(40, Math.min(w - 40, pos.x));
+          const clampedY = Math.max(20, Math.min(h - 20, pos.y));
+          orbs[key].x = clampedX;
+          orbs[key].y = clampedY;
+
+          const value = Math.round(((clampedX - 40) / (w - 80)) * 255);
+          const clamped = Math.max(0, Math.min(255, value));
+          if (key === 'r') onRChange(clamped);
+          else if (key === 'g') onGChange(clamped);
+          else onBChange(clamped);
+        };
+
+        const handleUp = (e) => {
+          if (draggingRef.current) {
+            const orbs = orbPositionsRef.current;
+            const key = draggingRef.current;
+            ripplesRef.current.push({ x: orbs[key].x, y: orbs[key].y, age: 0 });
+            draggingRef.current = null;
+          }
+        };
+
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleUp);
+        return () => {
+          window.removeEventListener('mousemove', handleMove);
+          window.removeEventListener('mouseup', handleUp);
+          window.removeEventListener('touchmove', handleMove);
+          window.removeEventListener('touchend', handleUp);
+        };
+      }, [getCanvasPos, onRChange, onGChange, onBChange]);
+
+      return (
+        <div className="pool-container">
+          <canvas
+            ref={canvasRef}
+            className="pool-canvas"
+            onMouseDown={handlePointerDown}
+            onTouchStart={handlePointerDown}
+            aria-label="Color mixing pool canvas"
+          />
+        </div>
+      );
+    }
+
+    // ─── Explorer Tab ─────────────────────────────────────────
+
+    function ExplorerTab({ r, g, b, onRChange, onGChange, onBChange, onPickColor, onGoToPalette, cvdMode }) {
+      const hex = rgbToHex(r, g, b);
+      const sim = simulateCVD(r, g, b, cvdMode);
+      const simHex = rgbToHex(sim.r, sim.g, sim.b);
+      const isCVD = cvdMode !== 'normal';
+      return (
+        <div>
+          <div className="controls-strip">
+            <div className="slider-control">
+              <span className="slider-label r">R</span>
+              <input type="range" className="r-slider" min="0" max="255" value={r}
+                onChange={e => onRChange(+e.target.value)} aria-label="Red channel" />
+              <span className="slider-value">{r}</span>
+            </div>
+            <div className="slider-control">
+              <span className="slider-label g">G</span>
+              <input type="range" className="g-slider" min="0" max="255" value={g}
+                onChange={e => onGChange(+e.target.value)} aria-label="Green channel" />
+              <span className="slider-value">{g}</span>
+            </div>
+            <div className="slider-control">
+              <span className="slider-label b">B</span>
+              <input type="range" className="b-slider" min="0" max="255" value={b}
+                onChange={e => onBChange(+e.target.value)} aria-label="Blue channel" />
+              <span className="slider-value">{b}</span>
+            </div>
+            <div className="mix-display">
+              <div className="mix-swatch" style={{ backgroundColor: `rgb(${r},${g},${b})` }}></div>
+              {isCVD && (
+                <div className="mix-swatch" style={{
+                  backgroundColor: `rgb(${sim.r},${sim.g},${sim.b})`,
+                  border: '1px solid var(--accent)',
+                  marginLeft: '-4px'
+                }} title="Simulated color"></div>
+              )}
+              <div>
+                <div className="mix-hex">{hex.toUpperCase()}</div>
+                {isCVD && <div className="mix-hex" style={{ color: 'var(--accent)', fontSize: '12px' }}>{simHex.toUpperCase()}</div>}
+                <div className="mix-label">{isCVD ? 'Original / Simulated' : 'Current Mix'}</div>
+              </div>
+              <button className="pick-btn" onClick={onGoToPalette} aria-label="Go to Palette Generator">
+                → Palette
+              </button>
+            </div>
+          </div>
+          <PoolCanvas r={r} g={g} b={b}
+            onRChange={onRChange} onGChange={onGChange} onBChange={onBChange}
+            onPickColor={onPickColor} />
+        </div>
+      );
+    }
+
+    // ─── Palette Tab ──────────────────────────────────────────
+
+    function PaletteTab({ baseColor, harmonyType, onHarmonyChange, onSwitchToExplorer, cvdMode }) {
+      const [copiedIdx, setCopiedIdx] = useState(null);
+      const [hexInput, setHexInput] = useState(rgbToHex(baseColor.r, baseColor.g, baseColor.b));
+      const [localBase, setLocalBase] = useState(baseColor);
+      const [animKey, setAnimKey] = useState(0);
+
+      useEffect(() => {
+        setLocalBase(baseColor);
+        setHexInput(rgbToHex(baseColor.r, baseColor.g, baseColor.b));
+      }, [baseColor.r, baseColor.g, baseColor.b]);
+
+      const handleHexChange = (val) => {
+        setHexInput(val);
+        const rgb = hexToRgb(val);
+        if (rgb) setLocalBase(rgb);
+      };
+
+      const handleHarmonyClick = (type) => {
+        onHarmonyChange(type);
+        setAnimKey(k => k + 1);
+      };
+
+      const colors = generatePalette(localBase.r, localBase.g, localBase.b, harmonyType);
+
+      const copyHex = (hex, idx) => {
+        navigator.clipboard.writeText(hex).catch(() => {});
+        setCopiedIdx(idx);
+        setTimeout(() => setCopiedIdx(null), 1200);
+      };
+
+      const exportPNG = () => {
+        const padding = 20;
+        const swatchW = 110;
+        const swatchH = 140;
+        const gap = 12;
+        const labelH = 40;
+        const totalW = padding * 2 + colors.length * swatchW + (colors.length - 1) * gap;
+        const totalH = padding * 2 + swatchH + labelH + 20;
+
+        const c = document.createElement('canvas');
+        c.width = totalW;
+        c.height = totalH;
+        const ctx = c.getContext('2d');
+
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, totalW, totalH);
+
+        colors.forEach((col, i) => {
+          const x = padding + i * (swatchW + gap);
+          const y = padding;
+          ctx.fillStyle = `rgb(${col.r},${col.g},${col.b})`;
+          ctx.beginPath();
+          ctx.roundRect(x, y, swatchW, swatchH, 8);
+          ctx.fill();
+
+          ctx.fillStyle = '#888';
+          ctx.font = '13px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(rgbToHex(col.r, col.g, col.b).toUpperCase(), x + swatchW / 2, y + swatchH + 20);
+        });
+
+        // Watermark
+        ctx.fillStyle = '#333';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('RGB Color Studio', totalW - padding, totalH - 8);
+
+        c.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `palette-${harmonyType}-${rgbToHex(localBase.r, localBase.g, localBase.b).slice(1)}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      };
+
+      const copyAll = () => {
+        const hexes = colors.map(c => rgbToHex(c.r, c.g, c.b).toUpperCase()).join(', ');
+        navigator.clipboard.writeText(hexes).catch(() => {});
+      };
+
+      const harmonies = [
+        { key: 'complementary', label: 'Complementary' },
+        { key: 'analogous', label: 'Analogous' },
+        { key: 'triadic', label: 'Triadic' },
+        { key: 'split', label: 'Split-Comp' },
+      ];
+
+      return (
+        <div className="palette-tab">
+          <div className="base-color-bar">
+            <label>Base Color:</label>
+            <div className="base-swatch" style={{ backgroundColor: `rgb(${localBase.r},${localBase.g},${localBase.b})` }}></div>
+            <input
+              className="hex-input"
+              value={hexInput}
+              onChange={e => handleHexChange(e.target.value)}
+              maxLength={7}
+              aria-label="Base color hex value"
+            />
+            <a className="change-link" onClick={onSwitchToExplorer}>Change via Explorer</a>
+          </div>
+
+          <div className="harmony-selector">
+            {harmonies.map(h => (
+              <button
+                key={h.key}
+                className={`harmony-btn ${harmonyType === h.key ? 'active' : ''}`}
+                onClick={() => handleHarmonyClick(h.key)}
+                aria-label={`${h.label} harmony`}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="swatch-grid" key={animKey}>
+            {colors.map((col, i) => {
+              const hex = rgbToHex(col.r, col.g, col.b).toUpperCase();
+              const isCVD = cvdMode !== 'normal';
+              const sim = simulateCVD(col.r, col.g, col.b, cvdMode);
+              const simHex = rgbToHex(sim.r, sim.g, sim.b).toUpperCase();
+              return (
+                <div className="swatch-card" key={i} style={{ animationDelay: `${i * 80}ms` }}>
+                  {isCVD ? (
+                    <React.Fragment>
+                      <div className={`swatch-dual ${i === 0 ? 'base-outline' : ''}`}>
+                        <div className="swatch-half" style={{ backgroundColor: `rgb(${col.r},${col.g},${col.b})` }}></div>
+                        <div className="swatch-half" style={{ backgroundColor: `rgb(${sim.r},${sim.g},${sim.b})` }}></div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--text-muted)', marginBottom: '2px' }}>
+                        <span>Original</span><span>Sim</span>
+                      </div>
+                    </React.Fragment>
+                  ) : (
+                    <div
+                      className={`swatch-fill ${i === 0 ? 'base-outline' : ''}`}
+                      style={{ backgroundColor: `rgb(${col.r},${col.g},${col.b})` }}
+                    ></div>
+                  )}
+                  <div className="swatch-hex">{hex}</div>
+                  {isCVD && <div className="swatch-hex" style={{ color: 'var(--accent)', fontSize: '11px' }}>{simHex}</div>}
+                  <button className="copy-btn" onClick={() => copyHex(hex, i)} aria-label={`Copy ${hex}`}>
+                    {copiedIdx === i ? 'Copied!' : 'Copy'}
+                    {copiedIdx === i && <span className="tooltip">Copied!</span>}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="export-bar">
+            <button className="export-btn" onClick={exportPNG} aria-label="Export palette as PNG">
+              ↓ Export Palette
+            </button>
+            <button className="export-btn" onClick={copyAll} aria-label="Copy all hex codes">
+              Copy All Hex
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── App ──────────────────────────────────────────────────
+
+    function App() {
+      const [r, setR] = useState(128);
+      const [g, setG] = useState(64);
+      const [b, setB] = useState(255);
+      const [activeTab, setActiveTab] = useState('explorer');
+      const [harmonyType, setHarmonyType] = useState('complementary');
+      const [baseColor, setBaseColor] = useState({ r: 128, g: 64, b: 255 });
+      const [cvdMode, setCvdMode] = useState('normal');
+
+      const handlePickColor = useCallback(() => {
+        setBaseColor({ r, g, b });
+      }, [r, g, b]);
+
+      const goToPalette = useCallback(() => {
+        setBaseColor({ r, g, b });
+        setActiveTab('palette');
+      }, [r, g, b]);
+
+      return (
+        <div>
+          <header className="app-header">
+            <h1>RGB Color Studio</h1>
+          </header>
+
+          <div className="tab-bar">
+            <button
+              className={`tab-btn ${activeTab === 'explorer' ? 'active' : ''}`}
+              onClick={() => setActiveTab('explorer')}
+              aria-label="Explorer tab"
+            >
+              Explorer
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'palette' ? 'active' : ''}`}
+              onClick={() => setActiveTab('palette')}
+              aria-label="Palette Generator tab"
+            >
+              Palette Generator
+            </button>
+          </div>
+
+          <div className="cvd-bar">
+            <label>Color Blindness Sim:</label>
+            <select
+              className="cvd-select"
+              value={cvdMode}
+              onChange={e => setCvdMode(e.target.value)}
+              aria-label="Color blindness simulation mode"
+            >
+              {Object.entries(CVD_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+            {cvdMode !== 'normal' && (
+              <React.Fragment>
+                <span className="cvd-badge">Simulating</span>
+                <div className="cvd-preview">
+                  <span className="cvd-preview-label">Mix:</span>
+                  <div className="cvd-preview-swatch" style={{
+                    backgroundColor: (() => {
+                      const sim = simulateCVD(r, g, b, cvdMode);
+                      return `rgb(${sim.r},${sim.g},${sim.b})`;
+                    })()
+                  }}></div>
+                </div>
+              </React.Fragment>
+            )}
+          </div>
+
+          {activeTab === 'explorer' ? (
+            <ExplorerTab
+              r={r} g={g} b={b}
+              onRChange={setR} onGChange={setG} onBChange={setB}
+              onPickColor={handlePickColor}
+              onGoToPalette={goToPalette}
+              cvdMode={cvdMode}
+            />
+          ) : (
+            <PaletteTab
+              baseColor={baseColor}
+              harmonyType={harmonyType}
+              onHarmonyChange={setHarmonyType}
+              onSwitchToExplorer={() => setActiveTab('explorer')}
+              cvdMode={cvdMode}
+            />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
