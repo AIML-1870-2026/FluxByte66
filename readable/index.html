@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Readable — Color Contrast Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design Tokens ───────────────────────────────────────────── */
+    :root {
+      --bg-app:        #0a0a0a;
+      --bg-surface:    #111111;
+      --accent:        #cc0000;
+      --accent-hover:  #ff1a1a;
+      --accent-dark:   #990000;
+      --text-primary:  #f0f0f0;
+      --text-muted:    #888888;
+      --border:        #2a2a2a;
+      --slider-thumb:  #cc0000;
+      --slider-filled: #cc0000;
+      --slider-empty:  #333333;
+      --radius:        2px;
+    }
+
+    /* ── Reset & Base ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg-app);
+      color: var(--text-primary);
+      font-family: "Inter", "DM Sans", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .header {
+      margin-bottom: 32px;
+    }
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* ── Preset Bar ─────────────────────────────────────────────── */
+    .preset-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 32px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .preset-bar::-webkit-scrollbar { height: 4px; }
+    .preset-bar::-webkit-scrollbar-track { background: transparent; }
+    .preset-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .preset-btn {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      background: #1a1a1a;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .preset-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+    .preset-btn:active {
+      background: var(--accent-dark);
+      color: #fff;
+    }
+    .preset-btn .fail-badge {
+      font-size: 0.65rem;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .preset-btn:hover .fail-badge,
+    .preset-btn:active .fail-badge {
+      color: #ffaaaa;
+    }
+
+    /* ── Control Panel ──────────────────────────────────────────── */
+    .control-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .color-controls-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 767px) {
+      .color-controls-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .color-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .color-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .color-panel-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+    .color-chip {
+      width: 32px;
+      height: 20px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ── Channel Row ────────────────────────────────────────────── */
+    .channel-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .channel-label {
+      width: 14px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent);
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .channel-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      background: var(--slider-empty);
+    }
+    .channel-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--slider-thumb);
+      cursor: pointer;
+      box-shadow: 0 0 0 2px #0a0a0a;
+      transition: transform 0.1s;
+    }
+    .channel-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    .channel-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: var(--slider-thumb);
+      cursor: pointer;
+    }
+    .channel-input {
+      width: 54px;
+      padding: 4px 6px;
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.82rem;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .channel-input:focus { border-color: var(--accent); }
+    /* Remove number input spinners */
+    .channel-input::-webkit-outer-spin-button,
+    .channel-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .channel-input[type=number] { -moz-appearance: textfield; }
+
+    .channel-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 479px) {
+      .channel-row {
+        flex-wrap: wrap;
+      }
+      .channel-slider { min-width: 100%; order: 3; }
+    }
+
+    /* ── Size Control ───────────────────────────────────────────── */
+    .size-control {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+    .size-control-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .size-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 72px;
+    }
+    .size-unit {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Preview Section ────────────────────────────────────────── */
+    .preview-section {
+      margin-bottom: 24px;
+    }
+    .preview-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .preview-box {
+      min-height: 200px;
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      transition: background-color 0.1s, color 0.1s;
+      word-break: break-word;
+    }
+    .preview-text {
+      line-height: 1.6;
+    }
+
+    /* ── Metrics Row ────────────────────────────────────────────── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.4fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .metrics-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .metric-ratio {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .metric-card-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+    .metric-card-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+    }
+
+    /* Ratio card — bigger, with status */
+    .metric-ratio {
+      align-items: center;
+      text-align: center;
+      border-width: 2px;
+      transition: border-color 0.2s;
+    }
+    .metric-ratio .metric-card-value {
+      font-size: 2rem;
+    }
+    .metric-ratio .status-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* Status colours for ratio card */
+    .metric-ratio.status-aaa  { border-color: #22c55e; }
+    .metric-ratio.status-aa   { border-color: #eab308; }
+    .metric-ratio.status-aa-large { border-color: #f97316; }
+    .metric-ratio.status-fail { border-color: var(--accent); }
+
+    .metric-ratio.status-aaa  .status-badge { color: #22c55e; }
+    .metric-ratio.status-aa   .status-badge { color: #eab308; }
+    .metric-ratio.status-aa-large .status-badge { color: #f97316; }
+    .metric-ratio.status-fail .status-badge { color: var(--accent); }
+
+    /* ── Divider ────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 24px 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <h1>Readable</h1>
+      <p>Explore color contrast and readability</p>
+    </header>
+
+    <!-- Preset Bar -->
+    <nav class="preset-bar" aria-label="Color presets">
+      <!-- Buttons injected by JS -->
+    </nav>
+
+    <!-- Control Panel -->
+    <section class="control-panel" aria-label="Color and size controls">
+
+      <div class="color-controls-row">
+
+        <!-- Background Color -->
+        <div class="color-panel" id="bg-panel">
+          <div class="color-panel-header">
+            <span class="color-panel-title">Background Color</span>
+            <div class="color-chip" id="bg-chip"
+                 aria-label="Background color preview"
+                 role="img"></div>
+          </div>
+          <!-- R -->
+          <div class="channel-row">
+            <span class="channel-label" aria-hidden="true">R</span>
+            <input type="range" class="channel-slider" id="bg-r-slider"
+                   min="0" max="255" step="1" value="255"
+                   aria-label="Background red channel" />
+            <input type="number" class="channel-input" id="bg-r-input"
+                   min="0" max="255" step="1" value="255"
+                   aria-label="Background red value" aria-describedby="bg-panel-desc" />
+            <div class="channel-swatch" id="bg-r-swatch" aria-hidden="true"></div>
+          </div>
+          <!-- G -->
+          <div class="channel-row">
+            <span class="channel-label" aria-hidden="true">G</span>
+            <input type="range" class="channel-slider" id="bg-g-slider"
+                   min="0" max="255" step="1" value="255"
+                   aria-label="Background green channel" />
+            <input type="number" class="channel-input" id="bg-g-input"
+                   min="0" max="255" step="1" value="255"
+                   aria-label="Background green value" />
+            <div class="channel-swatch" id="bg-g-swatch" aria-hidden="true"></div>
+          </div>
+          <!-- B -->
+          <div class="channel-row">
+            <span class="channel-label" aria-hidden="true">B</span>
+            <input type="range" class="channel-slider" id="bg-b-slider"
+                   min="0" max="255" step="1" value="255"
+                   aria-label="Background blue channel" />
+            <input type="number" class="channel-input" id="bg-b-input"
+                   min="0" max="255" step="1" value="255"
+                   aria-label="Background blue value" />
+            <div class="channel-swatch" id="bg-b-swatch" aria-hidden="true"></div>
+          </div>
+          <span id="bg-panel-desc" class="sr-only">Background color channel (0–255)</span>
+        </div>
+
+        <!-- Text Color -->
+        <div class="color-panel" id="fg-panel">
+          <div class="color-panel-header">
+            <span class="color-panel-title">Text Color</span>
+            <div class="color-chip" id="fg-chip"
+                 aria-label="Text color preview"
+                 role="img"></div>
+          </div>
+          <!-- R -->
+          <div class="channel-row">
+            <span class="channel-label" aria-hidden="true">R</span>
+            <input type="range" class="channel-slider" id="fg-r-slider"
+                   min="0" max="255" step="1" value="0"
+                   aria-label="Text red channel" />
+            <input type="number" class="channel-input" id="fg-r-input"
+                   min="0" max="255" step="1" value="0"
+                   aria-label="Text red value" />
+            <div class="channel-swatch" id="fg-r-swatch" aria-hidden="true"></div>
+          </div>
+          <!-- G -->
+          <div class="channel-row">
+            <span class="channel-label" aria-hidden="true">G</span>
+            <input type="range" class="channel-slider" id="fg-g-slider"
+                   min="0" max="255" step="1" value="0"
+                   aria-label="Text green channel" />
+            <input type="number" class="channel-input" id="fg-g-input"
+                   min="0" max="255" step="1" value="0"
+                   aria-label="Text green value" />
+            <div class="channel-swatch" id="fg-g-swatch" aria-hidden="true"></div>
+          </div>
+          <!-- B -->
+          <div class="channel-row">
+            <span class="channel-label" aria-hidden="true">B</span>
+            <input type="range" class="channel-slider" id="fg-b-slider"
+                   min="0" max="255" step="1" value="0"
+                   aria-label="Text blue channel" />
+            <input type="number" class="channel-input" id="fg-b-input"
+                   min="0" max="255" step="1" value="0"
+                   aria-label="Text blue value" />
+            <div class="channel-swatch" id="fg-b-swatch" aria-hidden="true"></div>
+          </div>
+        </div>
+
+      </div><!-- /color-controls-row -->
+
+      <!-- Text Size -->
+      <div class="size-control">
+        <div class="size-control-inner">
+          <label class="size-label" for="size-slider">Text Size</label>
+          <input type="range" class="channel-slider" id="size-slider"
+                 min="8" max="72" step="1" value="16"
+                 aria-label="Text size" style="flex:1;" />
+          <input type="number" class="channel-input" id="size-input"
+                 min="8" max="72" step="1" value="16"
+                 aria-label="Text size in pixels" style="width:60px;" />
+          <span class="size-unit">px</span>
+        </div>
+      </div>
+
+    </section><!-- /control-panel -->
+
+    <!-- Text Display Area -->
+    <section class="preview-section">
+      <div class="preview-label">Preview</div>
+      <div class="preview-box" id="preview-box" role="region" aria-label="Text preview">
+        <span class="preview-text" id="preview-text">
+          The quick brown fox jumps over the lazy dog.
+          AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz
+          0123456789
+        </span>
+      </div>
+    </section>
+
+    <!-- Metrics -->
+    <div class="metrics-row" role="region" aria-label="Contrast metrics">
+
+      <div class="metric-card">
+        <div class="metric-card-label">BG Luminosity</div>
+        <div class="metric-card-value" id="bg-lum-val">—</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-label">Text Luminosity</div>
+        <div class="metric-card-value" id="fg-lum-val">—</div>
+      </div>
+
+      <div class="metric-card metric-ratio" id="ratio-card">
+        <div class="metric-card-label">Contrast Ratio</div>
+        <div class="metric-card-value" id="ratio-val" aria-live="polite">—</div>
+        <div class="status-badge" id="status-badge"></div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <style>
+    /* Screen-reader only utility */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+  </style>
+
+  <script>
+    /* ── State ───────────────────────────────────────────────────── */
+    const state = { bgR: 255, bgG: 255, bgB: 255, fgR: 0, fgG: 0, fgB: 0, size: 16 };
+
+    /* ── Presets ─────────────────────────────────────────────────── */
+    const PRESETS = [
+      { label: "Black on White",    bg: [255,255,255], fg: [0,0,0],       fail: false },
+      { label: "White on Black",    bg: [0,0,0],       fg: [255,255,255], fail: false },
+      { label: "Dark Mode Default", bg: [18,18,18],    fg: [220,220,220], fail: false },
+      { label: "Navy & White",      bg: [0,51,102],    fg: [255,255,255], fail: false },
+      { label: "Yellow on Black",   bg: [0,0,0],       fg: [255,255,0],   fail: false },
+      { label: "Gray on Gray",      bg: [128,128,128], fg: [169,169,169], fail: true  },
+      { label: "Light Gray on White", bg: [255,255,255], fg: [187,187,187], fail: true },
+      { label: "Red on Green",      bg: [0,128,0],     fg: [255,0,0],     fail: true  },
+      { label: "Yellow on White",   bg: [255,255,255], fg: [255,215,0],   fail: true  },
+    ];
+
+    /* ── WCAG Calculation ────────────────────────────────────────── */
+    function linearize(c) {
+      const s = c / 255;
+      return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    }
+    function luminance(r, g, b) {
+      return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+    }
+    function contrastRatio(l1, l2) {
+      const lighter = Math.max(l1, l2);
+      const darker  = Math.min(l1, l2);
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    /* ── DOM Refs ────────────────────────────────────────────────── */
+    const ids = (id) => document.getElementById(id);
+    const els = {
+      bgR:  { s: ids("bg-r-slider"), n: ids("bg-r-input"), sw: ids("bg-r-swatch") },
+      bgG:  { s: ids("bg-g-slider"), n: ids("bg-g-input"), sw: ids("bg-g-swatch") },
+      bgB:  { s: ids("bg-b-slider"), n: ids("bg-b-input"), sw: ids("bg-b-swatch") },
+      fgR:  { s: ids("fg-r-slider"), n: ids("fg-r-input"), sw: ids("fg-r-swatch") },
+      fgG:  { s: ids("fg-g-slider"), n: ids("fg-g-input"), sw: ids("fg-g-swatch") },
+      fgB:  { s: ids("fg-b-slider"), n: ids("fg-b-input"), sw: ids("fg-b-swatch") },
+      size: { s: ids("size-slider"), n: ids("size-input") },
+      bgChip:    ids("bg-chip"),
+      fgChip:    ids("fg-chip"),
+      preview:   ids("preview-box"),
+      previewTxt: ids("preview-text"),
+      bgLum:     ids("bg-lum-val"),
+      fgLum:     ids("fg-lum-val"),
+      ratioVal:  ids("ratio-val"),
+      ratioCard: ids("ratio-card"),
+      statusBadge: ids("status-badge"),
+      presetBar: document.querySelector(".preset-bar"),
+    };
+
+    /* ── Slider Track Fill ───────────────────────────────────────── */
+    function updateSliderTrack(slider) {
+      const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+      slider.style.background =
+        `linear-gradient(to right, #cc0000 ${pct}%, #333333 ${pct}%)`;
+    }
+
+    /* ── Render ──────────────────────────────────────────────────── */
+    function render() {
+      const { bgR, bgG, bgB, fgR, fgG, fgB, size } = state;
+      const bgColor = `rgb(${bgR},${bgG},${bgB})`;
+      const fgColor = `rgb(${fgR},${fgG},${fgB})`;
+
+      /* Sliders & inputs */
+      els.bgR.s.value = bgR; els.bgR.n.value = bgR;
+      els.bgG.s.value = bgG; els.bgG.n.value = bgG;
+      els.bgB.s.value = bgB; els.bgB.n.value = bgB;
+      els.fgR.s.value = fgR; els.fgR.n.value = fgR;
+      els.fgG.s.value = fgG; els.fgG.n.value = fgG;
+      els.fgB.s.value = fgB; els.fgB.n.value = fgB;
+      els.size.s.value = size; els.size.n.value = size;
+
+      /* Track fills */
+      [els.bgR, els.bgG, els.bgB, els.fgR, els.fgG, els.fgB, els.size].forEach(
+        el => updateSliderTrack(el.s)
+      );
+
+      /* Swatches */
+      els.bgR.sw.style.background = `rgb(${bgR},0,0)`;
+      els.bgG.sw.style.background = `rgb(0,${bgG},0)`;
+      els.bgB.sw.style.background = `rgb(0,0,${bgB})`;
+      els.fgR.sw.style.background = `rgb(${fgR},0,0)`;
+      els.fgG.sw.style.background = `rgb(0,${fgG},0)`;
+      els.fgB.sw.style.background = `rgb(0,0,${fgB})`;
+
+      /* Color chips */
+      els.bgChip.style.background = bgColor;
+      els.bgChip.setAttribute("aria-label", `Background color: rgb(${bgR}, ${bgG}, ${bgB})`);
+      els.fgChip.style.background = fgColor;
+      els.fgChip.setAttribute("aria-label", `Text color: rgb(${fgR}, ${fgG}, ${fgB})`);
+
+      /* Preview */
+      els.preview.style.backgroundColor = bgColor;
+      els.previewTxt.style.color = fgColor;
+      els.previewTxt.style.fontSize = `${size}px`;
+
+      /* Metrics */
+      const bgL = luminance(bgR, bgG, bgB);
+      const fgL = luminance(fgR, fgG, fgB);
+      const ratio = contrastRatio(bgL, fgL);
+
+      els.bgLum.textContent = bgL.toFixed(4);
+      els.fgLum.textContent = fgL.toFixed(4);
+      els.ratioVal.textContent = `${ratio.toFixed(2)}:1`;
+
+      /* WCAG status */
+      const card = els.ratioCard;
+      card.classList.remove("status-aaa", "status-aa", "status-aa-large", "status-fail");
+      let statusClass, statusText;
+      if (ratio >= 7.0) {
+        statusClass = "status-aaa";  statusText = "AAA ✓";
+      } else if (ratio >= 4.5) {
+        statusClass = "status-aa";   statusText = "AA ✓";
+      } else if (ratio >= 3.0) {
+        statusClass = "status-aa-large"; statusText = "AA Large ✓";
+      } else {
+        statusClass = "status-fail"; statusText = "FAIL ✗";
+      }
+      card.classList.add(statusClass);
+      els.statusBadge.textContent = statusText;
+
+      /* URL state */
+      const params = new URLSearchParams({
+        bg: `${bgR},${bgG},${bgB}`,
+        fg: `${fgR},${fgG},${fgB}`,
+        size,
+      });
+      history.replaceState(null, "", `?${params}`);
+    }
+
+    /* ── Clamp Helper ────────────────────────────────────────────── */
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function parseChannel(v)    { return clamp(parseInt(v, 10) || 0, 0, 255); }
+    function parseSize(v)       { return clamp(parseInt(v, 10) || 16, 8, 72); }
+
+    /* ── Wire Controls ───────────────────────────────────────────── */
+    function wire(elPair, stateKey, parseFunc) {
+      const { s, n } = elPair;
+
+      s.addEventListener("input", () => {
+        state[stateKey] = parseFunc(s.value);
+        render();
+      });
+
+      n.addEventListener("input", () => {
+        const v = parseFunc(n.value);
+        state[stateKey] = v;
+        render();
+      });
+
+      n.addEventListener("blur", () => {
+        state[stateKey] = parseFunc(n.value);
+        render();
+      });
+    }
+
+    wire(els.bgR, "bgR", parseChannel);
+    wire(els.bgG, "bgG", parseChannel);
+    wire(els.bgB, "bgB", parseChannel);
+    wire(els.fgR, "fgR", parseChannel);
+    wire(els.fgG, "fgG", parseChannel);
+    wire(els.fgB, "fgB", parseChannel);
+    wire(els.size, "size", parseSize);
+
+    /* ── Build Preset Buttons ────────────────────────────────────── */
+    PRESETS.forEach(preset => {
+      const btn = document.createElement("button");
+      btn.className = "preset-btn";
+      btn.setAttribute("aria-label", `Apply preset: ${preset.label}`);
+
+      const labelEl = document.createElement("span");
+      labelEl.textContent = preset.label;
+      btn.appendChild(labelEl);
+
+      if (preset.fail) {
+        const badge = document.createElement("span");
+        badge.className = "fail-badge";
+        badge.textContent = "✕ FAIL";
+        btn.appendChild(badge);
+      }
+
+      btn.addEventListener("click", () => {
+        [state.bgR, state.bgG, state.bgB] = preset.bg;
+        [state.fgR, state.fgG, state.fgB] = preset.fg;
+        Object.assign(state, {
+          bgR: preset.bg[0], bgG: preset.bg[1], bgB: preset.bg[2],
+          fgR: preset.fg[0], fgG: preset.fg[1], fgB: preset.fg[2],
+        });
+        render();
+      });
+
+      els.presetBar.appendChild(btn);
+    });
+
+    /* ── URL State Init ──────────────────────────────────────────── */
+    function loadFromURL() {
+      const p = new URLSearchParams(location.search);
+      const bg = p.get("bg");
+      const fg = p.get("fg");
+      const sz = p.get("size");
+
+      if (bg) {
+        const [r, g, b] = bg.split(",").map(Number);
+        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+          state.bgR = clamp(r, 0, 255);
+          state.bgG = clamp(g, 0, 255);
+          state.bgB = clamp(b, 0, 255);
+        }
+      }
+      if (fg) {
+        const [r, g, b] = fg.split(",").map(Number);
+        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+          state.fgR = clamp(r, 0, 255);
+          state.fgG = clamp(g, 0, 255);
+          state.fgB = clamp(b, 0, 255);
+        }
+      }
+      if (sz) {
+        const s = parseInt(sz, 10);
+        if (!isNaN(s)) state.size = clamp(s, 8, 72);
+      }
+    }
+
+    /* ── Init ────────────────────────────────────────────────────── */
+    loadFromURL();
+    render();
+  </script>
+</body>
+</html>
