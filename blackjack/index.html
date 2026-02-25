@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blackjack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Playfair+Display:wght@700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- SVG Felt Texture Filter -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="feltTexture" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+      <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blend"/>
+      <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- TABLE AREA -->
+  <div class="table-area" id="tableArea">
+
+    <!-- Particle Canvas -->
+    <canvas id="particleCanvas" class="particle-canvas"></canvas>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="shoe-indicator" id="shoeIndicator">
+        <div class="shoe-stack" id="shoeStack">
+          <div class="shoe-card-icon"></div>
+          <div class="shoe-card-icon"></div>
+          <div class="shoe-card-icon"></div>
+        </div>
+        <div class="shoe-info">
+          <span class="shoe-label" id="shoeLabel">Shoe: 6 Decks</span>
+          <div class="shoe-bar-wrap">
+            <div class="shoe-bar" id="shoeBar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="soft17-badge" id="soft17Badge">S17: Stand</div>
+      <button class="settings-btn" id="settingsBtn" title="Settings">⚙</button>
+    </div>
+
+    <!-- Dealer Zone -->
+    <div class="hand-zone dealer-zone" id="dealerZone">
+      <div class="zone-label">Dealer</div>
+      <div class="cards-row" id="dealerCards"></div>
+      <div class="hand-total dealer-total" id="dealerTotal"></div>
+    </div>
+
+    <!-- Player Zone -->
+    <div class="hand-zone player-zone" id="playerZone">
+      <div class="split-hands" id="splitHands">
+        <div class="hand-container active-hand" id="hand0">
+          <div class="cards-row" id="playerCards0"></div>
+          <div class="hand-total" id="playerTotal0"></div>
+          <div class="hand-bet-label" id="handBetLabel0"></div>
+        </div>
+        <div class="hand-container" id="hand1" style="display:none">
+          <div class="cards-row" id="playerCards1"></div>
+          <div class="hand-total" id="playerTotal1"></div>
+          <div class="hand-bet-label" id="handBetLabel1"></div>
+        </div>
+      </div>
+      <div class="zone-label">Player</div>
+    </div>
+
+    <!-- Bet Display -->
+    <div class="bet-display-area" id="betDisplay">
+      <div class="bet-stacks" id="betStacks">
+        <div class="bet-stack-wrap" id="betStack0">
+          <div class="chip-stack" id="chipStack0"></div>
+          <div class="bet-label" id="betLabel0">Bet: $0</div>
+        </div>
+        <div class="bet-stack-wrap" id="betStack1" style="display:none">
+          <div class="chip-stack" id="chipStack1"></div>
+          <div class="bet-label" id="betLabel1">Hand 2: $0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-area" id="actionArea">
+      <div class="action-buttons" id="actionButtons">
+        <button class="btn btn-action" id="btnHit" style="display:none">Hit</button>
+        <button class="btn btn-action" id="btnStand" style="display:none">Stand</button>
+        <button class="btn btn-action" id="btnDouble" style="display:none">Double Down</button>
+        <button class="btn btn-split" id="btnSplit" style="display:none">Split</button>
+        <button class="btn btn-action" id="btnSurrender" style="display:none">Surrender</button>
+        <button class="btn btn-insurance" id="btnInsurance" style="display:none">Insurance</button>
+        <button class="btn btn-decline" id="btnDecline" style="display:none">Decline Insurance</button>
+      </div>
+      <div class="insurance-timer" id="insuranceTimer" style="display:none">
+        <svg class="timer-ring" viewBox="0 0 36 36">
+          <circle class="timer-bg" cx="18" cy="18" r="15.9"/>
+          <circle class="timer-fg" id="timerRing" cx="18" cy="18" r="15.9"/>
+        </svg>
+        <span id="timerCount">10</span>
+      </div>
+    </div>
+
+    <!-- Chip Selector + Betting Controls -->
+    <div class="betting-area" id="bettingArea">
+      <div class="chip-selector" id="chipSelector">
+        <button class="chip chip-5" data-value="5" title="$5">$5</button>
+        <button class="chip chip-25" data-value="25" title="$25">$25</button>
+        <button class="chip chip-100" data-value="100" title="$100">$100</button>
+        <button class="chip chip-500" data-value="500" title="$500">$500</button>
+      </div>
+      <div class="bet-controls">
+        <button class="btn btn-deal" id="btnDeal" disabled>Deal</button>
+        <button class="btn btn-secondary" id="btnRebet" style="display:none">Rebet</button>
+        <button class="btn btn-secondary" id="btnClear">Clear Bet</button>
+        <button class="btn btn-next" id="btnNext" style="display:none">Next Hand</button>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Result Overlay -->
+    <div class="result-overlay" id="resultOverlay" style="display:none">
+      <div class="result-content" id="resultContent">
+        <div class="result-text" id="resultText"></div>
+        <div class="result-amount" id="resultAmount"></div>
+      </div>
+    </div>
+
+    <!-- Deferred Deck Banner -->
+    <div class="deck-banner" id="deckBanner" style="display:none">
+      Deck change will apply after this round.
+    </div>
+
+  </div><!-- end table-area -->
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Casino Blackjack</span>
+    </div>
+
+    <div class="balance-block">
+      <div class="balance-row">
+        <span class="balance-label">Balance</span>
+        <span class="balance-value gold" id="sideBalance">$1,000</span>
+      </div>
+      <div class="balance-row">
+        <span class="balance-label">Current Bet</span>
+        <span class="balance-value" id="sideBet">$0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="stats-grid">
+      <div class="stat-cell">
+        <div class="stat-val" id="statWins">0</div>
+        <div class="stat-key">Wins</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="statLosses">0</div>
+        <div class="stat-key">Losses</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="statPushes">0</div>
+        <div class="stat-key">Pushes</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="statNetPL">$0</div>
+        <div class="stat-key">Net P/L</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="statWinRate">—</div>
+        <div class="stat-key">Win Rate</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="statStreak">—</div>
+        <div class="stat-key">Streak</div>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="history-header">Hand History</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+</div><!-- end app -->
+
+<!-- Settings Panel -->
+<div class="settings-overlay" id="settingsOverlay" style="display:none"></div>
+<div class="settings-panel" id="settingsPanel" style="display:none">
+  <div class="settings-header">
+    <span>Settings</span>
+    <button class="settings-close" id="settingsClose">✕</button>
+  </div>
+
+  <div class="setting-row">
+    <span class="setting-label">Table Theme</span>
+    <div class="toggle-group">
+      <button class="toggle-btn active" id="themeLight" data-theme="dark">Dark</button>
+      <button class="toggle-btn" id="themeGreen" data-theme="green">Green Felt</button>
+    </div>
+  </div>
+
+  <div class="setting-row">
+    <span class="setting-label">Number of Decks</span>
+    <div class="seg-group" id="deckSeg">
+      <button class="seg-btn" data-decks="1">1</button>
+      <button class="seg-btn" data-decks="2">2</button>
+      <button class="seg-btn" data-decks="4">4</button>
+      <button class="seg-btn active" data-decks="6">6</button>
+      <button class="seg-btn" data-decks="8">8</button>
+    </div>
+  </div>
+
+  <div class="setting-row">
+    <span class="setting-label">Animation Speed</span>
+    <div class="seg-group" id="speedSeg">
+      <button class="seg-btn" data-speed="1.8">Slow</button>
+      <button class="seg-btn active" data-speed="1">Normal</button>
+      <button class="seg-btn" data-speed="0.4">Fast</button>
+    </div>
+  </div>
+
+  <div class="setting-row">
+    <span class="setting-label">Particle Effects</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="particlesToggle" checked />
+      <span class="toggle-track"></span>
+    </label>
+  </div>
+
+  <div class="setting-row">
+    <span class="setting-label">Sound Effects</span>
+    <span class="coming-soon">Coming Soon</span>
+  </div>
+
+  <div class="setting-row">
+    <button class="btn btn-reset" id="btnReset">Reset to $1,000</button>
+  </div>
+</div>
+
+<!-- No Chips Modal -->
+<div class="modal-overlay" id="noChipsModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Out of Chips</div>
+    <div class="modal-body">You're out of chips.</div>
+    <div class="modal-actions">
+      <button class="btn btn-action" id="btnNewSession">New Session</button>
+      <button class="btn btn-secondary" id="btnReviewHistory">Review History</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Confirm Modal -->
+<div class="modal-overlay" id="resetModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Reset Session?</div>
+    <div class="modal-body">This will clear your session history.</div>
+    <div class="modal-actions">
+      <button class="btn btn-action" id="btnConfirmReset">Reset</button>
+      <button class="btn btn-secondary" id="btnCancelReset">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
