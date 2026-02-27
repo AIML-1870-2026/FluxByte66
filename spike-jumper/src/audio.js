@@ -2,36 +2,47 @@
 // AUDIO — Web Audio API wrapper
 // ============================================================
 
+import { MusicScheduler } from './music.js';
+
 export class AudioEngine {
   constructor() {
-    this.ctx         = null;
-    this.musicGain   = null;
-    this.sfxGain     = null;
-    this.musicSource = null;
-    this.musicBuffer = null;
-    this.startTime   = 0;    // AudioContext time when music started
-    this.sfxPool     = [];
-    this.sfxBuffers  = {};
-    this.musicVol    = 0.8;
-    this.sfxVol      = 0.7;
-    this._started    = false;
+    this.ctx          = null;
+    this.musicGain    = null;
+    this.sfxGain      = null;
+    this.sfxBuffers   = {};
+    this.musicVol     = 0.8;
+    this.sfxVol       = 0.7;
+    this._started     = false;
+    this.startTime    = 0;
+    this._scheduler   = null;
+    this._compressor  = null;
   }
 
   async init() {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Master compressor for loudness/dynamic control
+    this._compressor = this.ctx.createDynamicsCompressor();
+    this._compressor.threshold.value = -18;
+    this._compressor.knee.value      = 10;
+    this._compressor.ratio.value     = 4;
+    this._compressor.attack.value    = 0.003;
+    this._compressor.release.value   = 0.25;
+    this._compressor.connect(this.ctx.destination);
+
+    // Music gain → compressor
     this.musicGain = this.ctx.createGain();
     this.musicGain.gain.value = this.musicVol;
-    this.musicGain.connect(this.ctx.destination);
+    this.musicGain.connect(this._compressor);
 
+    // SFX gain → compressor
     this.sfxGain = this.ctx.createGain();
     this.sfxGain.gain.value = this.sfxVol;
-    this.sfxGain.connect(this.ctx.destination);
+    this.sfxGain.connect(this._compressor);
 
-    // Pre-generate procedural SFX
     this._genSFX();
   }
 
-  /** Resume AudioContext (required after user gesture) */
   async resume() {
     if (this.ctx && this.ctx.state === 'suspended') {
       await this.ctx.resume();
@@ -48,49 +59,42 @@ export class AudioEngine {
     if (this.sfxGain) this.sfxGain.gain.value = v;
   }
 
-  // --------------------------------------------------------
-  // Music playback
-  // --------------------------------------------------------
+  // ──────────────────────────────────────────────────────────
+  // Music playback (procedural via MusicScheduler)
+  // ──────────────────────────────────────────────────────────
 
-  /** Load an audio buffer from a URL (optional — falls back to procedural) */
-  async loadMusic(url) {
-    try {
-      const res  = await fetch(url);
-      const data = await res.arrayBuffer();
-      this.musicBuffer = await this.ctx.decodeAudioData(data);
-      return true;
-    } catch { return false; }
-  }
-
-  playMusic(buffer = null) {
+  /**
+   * Start music for a given level.
+   * @param {string} trackId   — beatmap track_id (e.g. 'the_awakening')
+   * @param {Array}  sections  — beatmap sections array
+   */
+  playMusic(trackId = 'the_awakening', sections = []) {
     this.stopMusic();
-    const src = this.ctx.createBufferSource();
-    src.buffer = buffer || this.musicBuffer || this._makeProceduralDrone();
-    src.loop   = false;
-    src.connect(this.musicGain);
-    this.startTime   = this.ctx.currentTime;
-    this._started    = true;
-    src.start(0);
-    this.musicSource = src;
+    if (!this.ctx) return;
+
+    this._scheduler = new MusicScheduler(this.ctx, this.musicGain, trackId, sections);
+    this.startTime  = this.ctx.currentTime;
+    this._started   = true;
+    this._scheduler.start();
   }
 
   stopMusic() {
-    if (this.musicSource) {
-      try { this.musicSource.stop(); } catch {}
-      this.musicSource = null;
+    if (this._scheduler) {
+      this._scheduler.stop();
+      this._scheduler = null;
     }
     this._started = false;
   }
 
-  /** Current playback position in milliseconds */
+  /** Current playback position in milliseconds (synced to AudioContext) */
   get currentTimeMs() {
     if (!this._started || !this.ctx) return 0;
     return (this.ctx.currentTime - this.startTime) * 1000;
   }
 
-  // --------------------------------------------------------
+  // ──────────────────────────────────────────────────────────
   // SFX
-  // --------------------------------------------------------
+  // ──────────────────────────────────────────────────────────
 
   playSFX(name) {
     const buf = this.sfxBuffers[name];
@@ -101,184 +105,153 @@ export class AudioEngine {
     src.start(0);
   }
 
-  // --------------------------------------------------------
-  // Procedural SFX generation via Web Audio API
-  // --------------------------------------------------------
+  // ──────────────────────────────────────────────────────────
+  // Procedural SFX buffers
+  // ──────────────────────────────────────────────────────────
 
   _genSFX() {
-    const c = this.ctx;
+    const c  = this.ctx;
     const SR = c.sampleRate;
 
-    const make = (fn) => {
-      const buf = c.createBuffer(1, SR * 0.5, SR);
+    const make = (dur, fn) => {
+      const buf = c.createBuffer(1, Math.ceil(SR * dur), SR);
       fn(buf.getChannelData(0), SR);
       return buf;
     };
 
-    // jump — short upward pitch synth blip
-    this.sfxBuffers['jump'] = make((d, sr) => {
+    // jump — short upward synth blip
+    this.sfxBuffers['jump'] = make(0.25, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 440 + t * 800;
-        d[i] = Math.sin(2 * Math.PI * freq * t) * Math.max(0, 1 - t * 20);
+        d[i] = Math.sin(2 * Math.PI * (380 + t * 900) * t) * Math.max(0, 1 - t * 18);
       }
     });
 
-    // double_jump — higher version
-    this.sfxBuffers['double_jump'] = make((d, sr) => {
+    // double_jump — higher pitch
+    this.sfxBuffers['double_jump'] = make(0.22, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 660 + t * 1200;
-        d[i] = Math.sin(2 * Math.PI * freq * t) * Math.max(0, 1 - t * 18);
+        d[i] = Math.sin(2 * Math.PI * (560 + t * 1400) * t) * Math.max(0, 1 - t * 18);
       }
     });
 
     // land — low thud
-    this.sfxBuffers['land'] = make((d, sr) => {
+    this.sfxBuffers['land'] = make(0.3, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 80 - t * 60;
-        d[i] = Math.sin(2 * Math.PI * Math.max(20, freq) * t) * Math.max(0, 1 - t * 25)
-             + (Math.random() * 2 - 1) * 0.3 * Math.max(0, 0.05 - t) * 20;
+        d[i] = Math.sin(2 * Math.PI * Math.max(18, 90 - t * 70) * t) * Math.max(0, 1 - t * 22)
+             + (Math.random() * 2 - 1) * 0.35 * Math.max(0, 0.04 - t) * 25;
       }
     });
 
-    // slide — swoosh
-    this.sfxBuffers['slide'] = make((d, sr) => {
+    // slide — descending swoosh
+    this.sfxBuffers['slide'] = make(0.25, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 600 - t * 500;
-        d[i] = Math.sin(2 * Math.PI * Math.max(50, freq) * t) * Math.max(0, 1 - t * 15) * 0.6;
+        d[i] = Math.sin(2 * Math.PI * Math.max(40, 700 - t * 600) * t) * Math.max(0, 1 - t * 14) * 0.55;
       }
     });
 
     // perfect — bright ping + bass hit
-    this.sfxBuffers['perfect'] = make((d, sr) => {
+    this.sfxBuffers['perfect'] = make(0.4, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = Math.sin(2 * Math.PI * 880 * t) * Math.max(0, 1 - t * 10)
-             + Math.sin(2 * Math.PI * 110 * t) * Math.max(0, 1 - t * 8) * 0.5;
+        d[i] = Math.sin(2 * Math.PI * 920 * t) * Math.max(0, 1 - t * 9)
+             + Math.sin(2 * Math.PI * 115 * t) * Math.max(0, 1 - t * 7) * 0.5;
       }
     });
 
     // good — softer ping
-    this.sfxBuffers['good'] = make((d, sr) => {
+    this.sfxBuffers['good'] = make(0.3, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = Math.sin(2 * Math.PI * 660 * t) * Math.max(0, 1 - t * 12) * 0.5;
+        d[i] = Math.sin(2 * Math.PI * 660 * t) * Math.max(0, 1 - t * 11) * 0.45;
       }
     });
 
     // combo_break — deflate blip
-    this.sfxBuffers['combo_break'] = make((d, sr) => {
+    this.sfxBuffers['combo_break'] = make(0.3, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 300 - t * 250;
-        d[i] = Math.sin(2 * Math.PI * Math.max(50, freq) * t) * Math.max(0, 1 - t * 20) * 0.6;
+        d[i] = Math.sin(2 * Math.PI * Math.max(40, 320 - t * 270) * t) * Math.max(0, 1 - t * 18) * 0.55;
       }
     });
 
-    // combo_up — short ascending arpeggio
-    this.sfxBuffers['combo_up'] = make((d, sr) => {
+    // combo_up — ascending arpeggio
+    this.sfxBuffers['combo_up'] = make(0.3, (d, sr) => {
       const notes = [330, 440, 550];
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const ni = Math.min(notes.length - 1, Math.floor(t / 0.04));
-        d[i] = Math.sin(2 * Math.PI * notes[ni] * t) * Math.max(0, 1 - (t % 0.04) * 40) * 0.5;
+        const ni = Math.min(notes.length - 1, Math.floor(t / 0.05));
+        d[i] = Math.sin(2 * Math.PI * notes[ni] * t) * Math.max(0, 1 - (t % 0.05) * 30) * 0.45;
       }
     });
 
     // laser_charge — rising whine
-    this.sfxBuffers['laser_charge'] = make((d, sr) => {
+    this.sfxBuffers['laser_charge'] = make(0.35, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 200 + t * 600;
-        d[i] = Math.sin(2 * Math.PI * freq * t) * Math.min(1, t * 5) * 0.4;
+        d[i] = Math.sin(2 * Math.PI * (180 + t * 700) * t) * Math.min(1, t * 6) * 0.38;
       }
     });
 
     // laser_fire — sharp zap
-    this.sfxBuffers['laser_fire'] = make((d, sr) => {
+    this.sfxBuffers['laser_fire'] = make(0.25, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - t * 30)
-             + Math.sin(2 * Math.PI * 1000 * t) * Math.max(0, 1 - t * 20) * 0.3;
+        d[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - t * 28)
+             + Math.sin(2 * Math.PI * 1100 * t) * Math.max(0, 1 - t * 22) * 0.3;
       }
     });
 
     // enemy_death — pop + zap
-    this.sfxBuffers['enemy_death'] = make((d, sr) => {
+    this.sfxBuffers['enemy_death'] = make(0.2, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = (Math.random() * 2 - 1) * Math.max(0, 0.1 - t) * 10
-             + Math.sin(2 * Math.PI * 400 * t) * Math.max(0, 1 - t * 25) * 0.4;
+        d[i] = (Math.random() * 2 - 1) * Math.max(0, 0.08 - t) * 12
+             + Math.sin(2 * Math.PI * 420 * t) * Math.max(0, 1 - t * 28) * 0.35;
       }
     });
 
-    // player_hit
-    this.sfxBuffers['player_hit'] = make((d, sr) => {
+    // player_hit — heavy distorted blip
+    this.sfxBuffers['player_hit'] = make(0.35, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - t * 15) * 0.8;
+        d[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - t * 14) * 0.75;
       }
     });
 
     // player_death — descending crash
-    this.sfxBuffers['player_death'] = make((d, sr) => {
+    this.sfxBuffers['player_death'] = make(0.6, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const freq = 300 - t * 250;
-        d[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - t * 4) * 0.5
-             + Math.sin(2 * Math.PI * Math.max(20, freq) * t) * Math.max(0, 1 - t * 4) * 0.5;
+        d[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - t * 3.5) * 0.5
+             + Math.sin(2 * Math.PI * Math.max(18, 280 - t * 250) * t) * Math.max(0, 1 - t * 3.5) * 0.45;
       }
     });
 
     // level_complete — 4-note fanfare
-    this.sfxBuffers['level_complete'] = make((d, sr) => {
+    this.sfxBuffers['level_complete'] = make(0.6, (d, sr) => {
       const notes = [330, 440, 550, 660];
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        const ni = Math.min(notes.length - 1, Math.floor(t / 0.08));
-        d[i] = Math.sin(2 * Math.PI * notes[ni] * t) * Math.max(0, 1 - (t % 0.08) * 8) * 0.6;
+        const ni = Math.min(notes.length - 1, Math.floor(t / 0.1));
+        d[i] = Math.sin(2 * Math.PI * notes[ni] * t) * Math.max(0, 1 - (t % 0.1) * 7) * 0.55;
       }
     });
 
     // menu_select / menu_confirm
-    this.sfxBuffers['menu_select'] = make((d, sr) => {
+    this.sfxBuffers['menu_select'] = make(0.12, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = Math.sin(2 * Math.PI * 440 * t) * Math.max(0, 1 - t * 30) * 0.3;
+        d[i] = Math.sin(2 * Math.PI * 440 * t) * Math.max(0, 1 - t * 32) * 0.28;
       }
     });
-    this.sfxBuffers['menu_confirm'] = make((d, sr) => {
+    this.sfxBuffers['menu_confirm'] = make(0.15, (d, sr) => {
       for (let i = 0; i < d.length; i++) {
         const t = i / sr;
-        d[i] = Math.sin(2 * Math.PI * 660 * t) * Math.max(0, 1 - t * 25) * 0.4;
+        d[i] = Math.sin(2 * Math.PI * 660 * t) * Math.max(0, 1 - t * 26) * 0.38;
       }
     });
-  }
-
-  /** Generate a procedural dark drone for levels without audio files */
-  _makeProceduralDrone() {
-    const c  = this.ctx;
-    const SR = c.sampleRate;
-    const DUR = 180; // 3 minutes
-    const buf = c.createBuffer(2, SR * DUR, SR);
-
-    for (let ch = 0; ch < 2; ch++) {
-      const d = buf.getChannelData(ch);
-      for (let i = 0; i < d.length; i++) {
-        const t = i / SR;
-        // Low drone + subtle pulse
-        const lfo = 0.5 + 0.5 * Math.sin(2 * Math.PI * 2 * t);
-        d[i] = (
-          Math.sin(2 * Math.PI * 55 * t) * 0.3 +
-          Math.sin(2 * Math.PI * 110 * t) * 0.15 * lfo +
-          Math.sin(2 * Math.PI * 82.5 * t) * 0.1 +
-          (Math.random() * 2 - 1) * 0.01
-        ) * 0.4;
-      }
-    }
-    return buf;
   }
 }

@@ -72,7 +72,7 @@ export class GameSession {
   }
 
   start() {
-    this.audio.playMusic();
+    this.audio.playMusic(this.beatmap.track_id, this.beatmap.sections);
   }
 
   stop() {
