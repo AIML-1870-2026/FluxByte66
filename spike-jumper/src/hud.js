@@ -66,10 +66,17 @@ export class HUD {
     ctx.fill();
 
     // ── Lives (top-right) ─────────────────────────────────────
+    // Numeric count so changes are always obvious
+    ctx.font      = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = lives > 0 ? COL.NEON_RED : '#660000';
+    ctx.fillText(`${lives}`, CANVAS_WIDTH - 8, 16);
+
+    // Pixel hearts (shifted left to make room for the number)
     for (let i = 0; i < MAX_LIVES; i++) {
-      const hx = CANVAS_WIDTH - 12 - i * 14;
+      const hx = CANVAS_WIDTH - 22 - i * 14;
       const hy = 6;
-      ctx.fillStyle = i < lives ? COL.NEON_RED : '#330000';
+      ctx.fillStyle = i < lives ? COL.NEON_RED : '#660000';
       // pixel heart
       ctx.fillRect(hx - 3, hy,     2, 2);
       ctx.fillRect(hx + 1, hy,     2, 2);

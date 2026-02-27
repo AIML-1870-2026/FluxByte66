@@ -75,19 +75,24 @@ export class FloorSpike extends Hazard {
 // ──────────────────────────────────────────────────────────────
 export class Laser extends Hazard {
   constructor(x, orientation = 'horizontal', beatDuration = 500) {
-    // horizontal: player must slide under; spans full width at mid-height
-    const y = orientation === 'horizontal'
-      ? FLOOR_Y - 32
-      : 0;
-    const w = orientation === 'horizontal' ? CANVAS_WIDTH * 2 : 6;
-    const h = orientation === 'horizontal' ? 6 : FLOOR_Y;
-    super(x, y, w, h);
+    // Horizontal laser: covers the full canvas width at a height the player must slide under.
+    // Standing player AABB: y=FLOOR_Y-16 (362), h=16 → spans 362–378
+    // Sliding player AABB: y=FLOOR_Y-10 (368), h=10 → spans 368–378
+    // Laser AABB must overlap 362–378 (standing) but NOT overlap 368–378 (sliding).
+    // Using y=FLOOR_Y-30 (348), h=16 → laser spans 348–364:
+    //   standing: 362 < 364 ✓  378 > 348 ✓  → HIT
+    //   sliding:  368 < 364?   NO            → SAFE
+    const lx = orientation === 'horizontal' ? 0 : x;
+    const y  = orientation === 'horizontal' ? FLOOR_Y - 30 : 0;
+    const w  = orientation === 'horizontal' ? CANVAS_WIDTH : 6;
+    const h  = orientation === 'horizontal' ? 16 : FLOOR_Y;
+    super(lx, y, w, h);
     this.orientation  = orientation;
     this._charge      = true;        // charge-up phase
     this._chargeDur   = 300;         // ms
     this._chargeTimer = 0;
     this._fired       = false;
-    this._holdDur     = 300;         // ms the beam is active
+    this._holdDur     = 400;         // ms the beam is active
     this._holdTimer   = 0;
     this._glowPhase   = 0;
     this.beatDuration = beatDuration;
