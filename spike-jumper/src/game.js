@@ -81,15 +81,7 @@ export class GameSession {
 
   update(dt, input) {
     if (this.player.dead && this.player.deathFinished) {
-      if (this.lives > 0) {
-        this.lives--;
-        if (this.lives > 0) {
-          this._respawn();
-        } else {
-          this._finishDead();
-          return;
-        }
-      }
+      this._finishDead();
       return;
     }
 
@@ -171,11 +163,11 @@ export class GameSession {
       if (pBox.intersects(h.aabb)) {
         const hit = this.player.takeDamage(this.particles);
         if (hit) {
+          this.lives = Math.max(0, this.lives - 1);
           this.audio.playSFX('player_hit');
           this._shake(0.15, 4);
 
-          // If dead after hit
-          if (this.lives <= 1) {
+          if (this.lives === 0) {
             this.player.die(this.particles);
             this.audio.playSFX('player_death');
             this._shake(0.3, 6);
