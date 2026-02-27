@@ -217,8 +217,12 @@ export class GameSession {
     // Spawn pattern
     const sec = this.rhythm.currentSection;
     const secLabel = sec ? sec.label : 'verse';
-    const diffTier = this.level.id - 1; // 0-indexed
-    const beatMs   = 60000 / this.beatmap.bpm;
+    // Difficulty scales with both level AND section — verse unlocks medium,
+    // chorus unlocks hard, so even Level 1 gets a proper challenge.
+    const baseLevel = this.level.id - 1; // 0-indexed
+    const SECTION_BONUS = { intro: 0, verse: 1, chorus: 2, bridge: 0, outro: 0 };
+    const diffTier  = Math.min(2, baseLevel + (SECTION_BONUS[secLabel] ?? 0));
+    const beatMs    = 60000 / this.beatmap.bpm;
     const pxPerMs  = this.scrollSpeed / 1000;
 
     const newHazards = this.patterns.spawn(

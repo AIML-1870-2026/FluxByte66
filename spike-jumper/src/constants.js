@@ -83,7 +83,7 @@ export const LEVELS = [
   {
     id: 1,
     name: 'The Awakening',
-    bpm: 100,
+    bpm: 110,
     beatmap: 'the_awakening',
     scrollBase: 1.0,
     unlocked: true,

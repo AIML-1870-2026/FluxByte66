@@ -207,7 +207,7 @@ function _lead(ctx, dest, t, freq, dur, vol) {
 
 const TRACKS = {
   the_awakening: {
-    bpm: 100,
+    bpm: 110,
     // 4-bar chord loop (one chord per bar)
     chordsVerse:  [[N.A2,N.C3,N.E3], [N.G2,N.B2,N.D3], [N.F2,N.A2,N.C3], [N.E2,N.G2,N.B2]],
     chordsChorus: [[N.A2,N.C3,N.E3], [N.D2,N.F2,N.A2], [N.G2,N.B2,N.D3], [N.E2,N.G2,N.B2]],
