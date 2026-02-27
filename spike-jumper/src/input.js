@@ -11,7 +11,7 @@ export class Input {
     window.addEventListener('keydown', e => {
       if (!this._keys.has(e.code)) this._justDown.add(e.code);
       this._keys.add(e.code);
-      if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+      if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code)) e.preventDefault();
     });
     window.addEventListener('keyup', e => {
       this._keys.delete(e.code);
@@ -54,4 +54,5 @@ export class Input {
   isBack()    { return this.isJustDown('Escape'); }
   isUp()      { return this.isJustDown('ArrowUp')   || this.isJustDown('KeyW'); }
   isDown2()   { return this.isJustDown('ArrowDown') || this.isJustDown('KeyS'); }
+  isSkip()    { return this.isJustDown('KeyN') || this.isJustDown('Tab'); }
 }

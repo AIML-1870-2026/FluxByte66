@@ -151,6 +151,16 @@ function update(dt) {
 
     case STATE.PLAYING:
       session.update(dt, input);
+      if (input.isSkip()) {
+        session.stop();
+        const nextIdx = LEVELS.findIndex(l => l.id === currentLevel.id) + 1;
+        if (nextIdx < LEVELS.length) {
+          startLevel(LEVELS[nextIdx]);
+        } else {
+          state = STATE.MENU;
+        }
+        audio.playSFX('menu_confirm');
+      }
       break;
 
     case STATE.DEAD:

@@ -84,6 +84,8 @@ export class HUD {
     ctx.font      = '8px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(levelName.toUpperCase(), 8, CANVAS_HEIGHT - 18);
+    ctx.fillStyle = '#332222';
+    ctx.fillText('[N] SKIP', 8, CANVAS_HEIGHT - 8);
 
     // ── Progress bar (bottom-center) ─────────────────────────
     const barW    = 200;
