@@ -775,21 +775,25 @@ async function fetchNeoStats() {
 // ══════════════════════════════════════════════════════════════
 //  FETCH: SBDB CLOSE APPROACH
 // ══════════════════════════════════════════════════════════════
+// ssd-api.jpl.nasa.gov has no CORS headers — proxy both JPL requests
+const CORS_PROXY = 'https://corsproxy.io/?';
+function jplUrl(path) { return CORS_PROXY + encodeURIComponent('https://ssd-api.jpl.nasa.gov/' + path); }
+
 async function fetchCad() {
   setError('cad', null);
   try {
-    const res  = await fetch('https://ssd-api.jpl.nasa.gov/cad.api?dist-max=0.05&date-min=now&limit=50&sort=dist&diameter=true');
+    const res  = await fetch(jplUrl('cad.api?dist-max=0.05&date-min=now&limit=50&sort=dist&diameter=true'));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     const fields = json.fields;
     const fi = k => fields.indexOf(k);
     const rows = (json.data || []).map(r => ({
-      des:      r[fi('des')]       ?? '—',
-      cd:       r[fi('cd')]        ?? '—',
+      des:      r[fi('des')]  ?? '—',
+      cd:       r[fi('cd')]   ?? '—',
       dist:     parseFloat(r[fi('dist')] ?? 0),
       dist_km:  parseFloat(r[fi('dist')] ?? 0) * AU_KM,
-      vrel:     parseFloat(r[fi('v-rel')] ?? 0),
-      vinf:     parseFloat(r[fi('v-inf')] ?? 0),
+      vrel:     parseFloat(r[fi('v_rel')] ?? r[fi('v-rel')] ?? 0),  // API uses underscores now
+      vinf:     parseFloat(r[fi('v_inf')] ?? r[fi('v-inf')] ?? 0),
       h:        parseFloat(r[fi('h')] ?? NaN),
       diameter: r[fi('diameter')] != null ? parseFloat(r[fi('diameter')]) : null,
       fullname: r[fi('fullname')] ?? r[fi('des')] ?? '—'
@@ -808,7 +812,7 @@ async function fetchCad() {
 async function fetchSentry() {
   setError('sentry', null);
   try {
-    const res  = await fetch('https://ssd-api.jpl.nasa.gov/sentry.api?removed=0');
+    const res  = await fetch(jplUrl('sentry.api?removed=0'));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     const rows = (json.data || []).map(o => ({
