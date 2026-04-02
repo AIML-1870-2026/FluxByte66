@@ -462,32 +462,32 @@ async function fetchLabelForDrug(name) {
 }
 
 async function fetchTotalEvents(genericName) {
-  const enc = encodeURIComponent(genericName);
-  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&limit=1`);
+  const enc = encodeURIComponent('"' + genericName + '"');
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:${enc}&limit=1`);
   return (data && data.meta && data.meta.results) ? data.meta.results.total : 0;
 }
 
 async function fetchTopReactions(genericName) {
-  const enc = encodeURIComponent(genericName);
-  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&count=patient.reaction.reactionmeddrapt.exact&limit=10`);
+  const enc = encodeURIComponent('"' + genericName + '"');
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:${enc}&count=patient.reaction.reactionmeddrapt.exact&limit=10`);
   return (data && data.results) ? data.results : [];
 }
 
 async function fetchOutcomes(genericName) {
-  const enc = encodeURIComponent(genericName);
-  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&count=patient.reaction.reactionoutcome&limit=10`);
+  const enc = encodeURIComponent('"' + genericName + '"');
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:${enc}&count=patient.reaction.reactionoutcome&limit=10`);
   return (data && data.results) ? data.results : [];
 }
 
 async function fetchRecalls(drugName) {
-  const enc = encodeURIComponent(drugName);
-  const data = await apiFetch(`${FDA_BASE}/drug/enforcement.json?search=product_description:"${enc}"&sort=recall_initiation_date:desc&limit=25`);
+  const enc = encodeURIComponent('"' + drugName + '"');
+  const data = await apiFetch(`${FDA_BASE}/drug/enforcement.json?search=product_description:${enc}&sort=recall_initiation_date:desc&limit=25`);
   return (data && data.results) ? data.results : [];
 }
 
 async function fetchTrendData(genericName) {
-  const enc = encodeURIComponent(genericName);
-  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&count=receivedate&limit=200`);
+  const enc = encodeURIComponent('"' + genericName + '"');
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:${enc}&count=receivedate&limit=200`);
   return (data && data.results) ? data.results : [];
 }
 
@@ -521,12 +521,12 @@ async function loadDrug(slot, name) {
     }
     s.labelData = labelData;
     const openfda = labelData.openfda || {};
-    const genericName = (openfda.generic_name || [name])[0].toLowerCase();
+    const genericName = (openfda.generic_name || [name])[0]; // keep original case (FDA stores in ALL CAPS)
     s.genericName = genericName;
     s.labelTabData = labelData;
 
-    // Update display name with official name
-    const officialName = (openfda.generic_name || [name])[0];
+    // Update display name with official name (formatted to title case for display)
+    const officialName = formatTitle(genericName);
     s.displayName = officialName;
     document.getElementById(`panel-${slot}-name`).textContent = officialName;
     document.getElementById(`input-${slot}`).value = officialName;
@@ -565,7 +565,7 @@ function checkSameDrugWarning() {
   const notice = document.getElementById('same-drug-notice');
   const ga = state.a.genericName;
   const gb = state.b.genericName;
-  if (ga && gb && ga === gb) {
+  if (ga && gb && ga.toLowerCase() === gb.toLowerCase()) {
     notice.classList.remove('hidden');
   } else {
     notice.classList.add('hidden');
