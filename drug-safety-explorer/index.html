@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drug Safety Explorer — FDA Drug Safety Data</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #F0F4F8; color: #1C2B2B; min-height: 100vh; }
+    h1, h2, h3, h4 { font-family: 'Source Serif 4', serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* === HEADER === */
+    header { background: white; border-bottom: 1px solid #E8EDF2; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+    .header-inner { max-width: 1280px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 38px; height: 38px; color: #4A9B8E; flex-shrink: 0; }
+    .tool-title { font-size: 1.4rem; font-weight: 700; color: #1C2B2B; letter-spacing: -0.02em; line-height: 1.2; }
+    .tool-tagline { font-size: 0.8rem; color: #6B8A8A; margin-top: 1px; }
+    .about-btn { display: flex; align-items: center; gap: 6px; background: none; border: 1.5px solid #C8D4DC; border-radius: 20px; padding: 7px 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 500; color: #4A6070; transition: all 0.2s; white-space: nowrap; }
+    .about-btn:hover { border-color: #4A9B8E; color: #4A9B8E; background: #EAF6F4; }
+    .about-btn svg { width: 15px; height: 15px; }
+
+    /* === DISCLAIMER === */
+    #disclaimer-full { background: #EFF6F4; border-bottom: 1px solid #B5D9D2; transition: all 0.3s; }
+    .disclaimer-inner { max-width: 1280px; margin: 0 auto; padding: 11px 24px; display: flex; align-items: flex-start; gap: 10px; }
+    .disclaimer-icon-wrap { color: #4A9B8E; flex-shrink: 0; margin-top: 1px; }
+    .disclaimer-icon-wrap svg { width: 16px; height: 16px; }
+    .disclaimer-text { flex: 1; font-size: 0.84rem; color: #2D5A52; line-height: 1.55; }
+    .disclaimer-collapse-btn { background: none; border: none; color: #4A9B8E; cursor: pointer; font-size: 0.79rem; font-family: 'DM Sans', sans-serif; padding: 4px 8px; border-radius: 4px; flex-shrink: 0; white-space: nowrap; font-weight: 500; }
+    .disclaimer-collapse-btn:hover { background: rgba(74,155,142,0.15); }
+    #disclaimer-bar { background: #EFF6F4; border-bottom: 1px solid #B5D9D2; text-align: center; padding: 5px 24px; }
+    #disclaimer-bar a { color: #4A9B8E; font-size: 0.79rem; text-decoration: none; font-weight: 500; }
+    #disclaimer-bar a:hover { text-decoration: underline; }
+
+    /* === MAIN === */
+    main { max-width: 1280px; margin: 0 auto; padding: 28px 24px 48px; }
+
+    /* === SEARCH === */
+    .search-section { margin-bottom: 28px; }
+    .search-row { display: flex; align-items: flex-end; gap: 14px; }
+    .search-slot { flex: 1; position: relative; }
+    .search-label-row { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+    .search-slot-label { font-size: 0.77rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .slot-a .search-slot-label { color: #4A9B8E; }
+    .slot-b .search-slot-label { color: #6B7FA3; }
+    .search-input-wrap { position: relative; }
+    .search-input { width: 100%; padding: 11px 42px 11px 14px; border: 2px solid #E8EDF2; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #1C2B2B; background: white; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+    .slot-a .search-input:focus { border-color: #4A9B8E; box-shadow: 0 0 0 3px rgba(74,155,142,0.12); }
+    .slot-b .search-input:focus { border-color: #6B7FA3; box-shadow: 0 0 0 3px rgba(107,127,163,0.12); }
+    .search-spinner { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border: 2px solid #E8EDF2; border-top-color: #4A9B8E; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    .search-spinner.visible { display: block; }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+    .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1px solid #E8EDF2; border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.13); z-index: 200; overflow: hidden; }
+    .autocomplete-item { padding: 10px 14px; cursor: pointer; transition: background 0.12s; border-bottom: 1px solid #F5F7FA; }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.highlighted { background: #F4F9F8; }
+    .ac-generic { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; font-weight: 500; color: #1C2B2B; }
+    .ac-brand { font-size: 0.78rem; color: #6B8A8A; margin-top: 2px; }
+    .ac-no-results { padding: 14px; text-align: center; font-size: 0.85rem; color: #6B8A8A; }
+    .swap-btn { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #E8EDF2; background: white; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.25s; flex-shrink: 0; margin-bottom: 2px; color: #6B8A8A; }
+    .swap-btn:hover { border-color: #4A9B8E; color: #4A9B8E; background: #EAF6F4; transform: rotate(180deg); }
+    .info-btn { background: none; border: 1px solid #C8D4DC; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.72rem; color: #7A9090; display: inline-flex; align-items: center; justify-content: center; transition: all 0.18s; flex-shrink: 0; font-family: 'DM Sans', sans-serif; }
+    .info-btn:hover { border-color: #4A9B8E; color: #4A9B8E; background: #EAF6F4; }
+
+    /* === SAME DRUG WARNING === */
+    .same-drug-notice { background: #FFFBF0; border: 1px solid #E0C060; border-radius: 10px; padding: 10px 16px; margin-top: 14px; font-size: 0.84rem; color: #6B4C0A; display: flex; align-items: center; gap: 8px; }
+
+    /* === COMPARISON PANEL === */
+    .comparison-panel { background: white; border-radius: 16px; border: 1px solid #E8EDF2; box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: visible; }
+    .tab-nav { display: flex; padding: 14px 20px 0; gap: 6px; border-bottom: 1px solid #E8EDF2; background: #FAFBFD; border-radius: 16px 16px 0 0; overflow-x: auto; }
+    .tab-btn { padding: 9px 18px; border-radius: 20px 20px 0 0; border: 1px solid transparent; border-bottom: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; color: #6B8A8A; transition: all 0.18s; white-space: nowrap; position: relative; bottom: -1px; }
+    .tab-btn:hover { color: #4A9B8E; background: #F0F9F7; }
+    .tab-btn.active { background: white; color: #4A9B8E; border-color: #E8EDF2; font-weight: 600; }
+
+    .panels-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .drug-panel { padding: 22px; border-right: 1px solid #E8EDF2; min-height: 400px; }
+    .drug-panel:last-child { border-right: none; }
+    .panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #F0F4F8; }
+    .drug-slot-badge { padding: 3px 11px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+    .slot-a-badge { background: #EAF6F4; color: #4A9B8E; }
+    .slot-b-badge { background: #EEF1F8; color: #6B7FA3; }
+    .panel-drug-name { font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; font-weight: 500; color: #1C2B2B; }
+    .panel-content { animation: fadeUp 0.25s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* === CARDS === */
+    .card { background: #FAFAFA; border: 1px solid #E8EDF2; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .card-white { background: white; }
+
+    /* === OVERVIEW TAB === */
+    .stat-callout { text-align: center; padding: 20px 18px 16px; }
+    .stat-number { font-family: 'Source Serif 4', serif; font-size: 2.4rem; font-weight: 700; line-height: 1; }
+    .slot-a .stat-number { color: #4A9B8E; }
+    .slot-b .stat-number { color: #6B7FA3; }
+    .stat-label-row { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; }
+    .stat-label { font-size: 0.82rem; color: #6B8A8A; }
+    .info-field { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #F0F4F8; gap: 8px; }
+    .info-field:last-child { border-bottom: none; }
+    .field-label { font-size: 0.78rem; color: #6B8A8A; font-weight: 500; flex-shrink: 0; padding-top: 2px; min-width: 100px; }
+    .field-value { font-size: 0.875rem; color: #1C2B2B; text-align: right; flex: 1; }
+    .pill-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 500; margin: 2px 2px 2px 0; background: #F0F4F8; color: #4A6070; }
+
+    /* === ADVERSE EVENTS TAB === */
+    .section-heading-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .section-heading { font-family: 'Source Serif 4', serif; font-size: 0.97rem; font-weight: 600; color: #1C2B2B; }
+    .chart-wrap { position: relative; width: 100%; }
+    .chart-table-toggle { font-size: 0.77rem; color: #4A9B8E; background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 4px 0; text-decoration: underline; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; display: none; }
+    .data-table th, .data-table td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #F0F4F8; }
+    .data-table th { font-weight: 600; color: #6B8A8A; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .data-table.visible { display: table; }
+
+    /* === RECALLS TAB === */
+    .recall-stats { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .recall-stat-card { flex: 1; min-width: 70px; background: #F7F9FC; border-radius: 10px; padding: 12px 14px; }
+    .recall-stat-num { font-size: 1.5rem; font-weight: 700; font-family: 'Source Serif 4', serif; color: #1C2B2B; }
+    .recall-stat-lbl { font-size: 0.72rem; color: #6B8A8A; margin-top: 2px; }
+    .recall-timeline { }
+    .recall-item { display: flex; gap: 14px; margin-bottom: 14px; }
+    .timeline-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 4px; }
+    .timeline-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .timeline-line { width: 2px; flex: 1; background: #E8EDF2; margin-top: 4px; }
+    .recall-card { flex: 1; border-radius: 12px; padding: 14px; border: 1px solid; }
+    .class-i-card { background: #FDF2F2; border-color: #D97C7C; }
+    .class-ii-card { background: #FFFBF0; border-color: #E0B84A; }
+    .class-iii-card { background: #F2F9F4; border-color: #72C48A; }
+    .class-default-card { background: #F7F9FC; border-color: #E8EDF2; }
+    .class-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; margin-bottom: 7px; border: 1px solid; }
+    .class-i-badge { background: #FDF2F2; color: #7B2424; border-color: #D97C7C; }
+    .class-ii-badge { background: #FFFBF0; color: #6B4C0A; border-color: #E0B84A; }
+    .class-iii-badge { background: #F2F9F4; color: #1E5C35; border-color: #72C48A; }
+    .class-default-badge { background: #F0F4F8; color: #4A6070; border-color: #C8D4DC; }
+    .class-i-dot { background: #D97C7C; }
+    .class-ii-dot { background: #E0B84A; }
+    .class-iii-dot { background: #72C48A; }
+    .class-default-dot { background: #9BA8B5; }
+    .recall-date { font-size: 0.77rem; color: #6B8A8A; font-weight: 500; margin-bottom: 5px; }
+    .recall-product { font-size: 0.875rem; font-weight: 600; color: #1C2B2B; margin-bottom: 5px; line-height: 1.4; }
+    .recall-reason { font-size: 0.82rem; color: #3A5050; line-height: 1.5; }
+    .recall-firm { font-size: 0.77rem; color: #6B8A8A; margin-top: 7px; }
+    .recall-status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; margin-top: 8px; background: rgba(0,0,0,0.05); color: #4A6070; }
+
+    /* === LABELING TAB === */
+    .boxed-warning-card { border: 2px solid #D4A843; background: #FFFDF0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+    .boxed-warning-label { font-weight: 700; font-size: 0.75rem; color: #6B4C0A; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .boxed-warning-text { font-size: 0.84rem; color: #4A3010; line-height: 1.6; }
+    .accordion-item { border-radius: 12px; border: 1px solid #E8EDF2; margin-bottom: 8px; overflow: hidden; }
+    .accordion-header { width: 100%; padding: 13px 16px; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600; color: #1C2B2B; text-align: left; transition: background 0.15s; }
+    .accordion-header:hover { background: #F9FAFB; }
+    .chevron { transition: transform 0.22s; color: #6B8A8A; font-size: 0.9rem; }
+    .accordion-header.open .chevron { transform: rotate(180deg); }
+    .accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s; background: #FAFBFD; }
+    .accordion-body.open { max-height: 600px; padding-bottom: 16px; }
+    .accordion-body-inner { padding: 14px 16px 0; font-size: 0.84rem; color: #2D3F3F; line-height: 1.75; white-space: pre-wrap; }
+
+    /* === SKELETON LOADERS === */
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton { background: linear-gradient(90deg, #e8edf2 25%, #f2f5f8 50%, #e8edf2 75%); background-size: 200% 100%; animation: shimmer 1.6s infinite; border-radius: 8px; }
+    .sk-line { height: 14px; margin-bottom: 10px; }
+    .sk-short { width: 55%; }
+    .sk-medium { width: 75%; }
+    .sk-full { width: 100%; }
+    .sk-tall { height: 24px; }
+    .sk-block { border-radius: 12px; }
+    .sk-number { height: 52px; width: 120px; margin: 0 auto 8px; border-radius: 8px; }
+    .sk-bars { margin-top: 12px; }
+    .sk-bar { height: 22px; margin-bottom: 8px; border-radius: 6px; }
+
+    /* === EMPTY / ERROR STATES === */
+    .empty-state { text-align: center; padding: 32px 20px; }
+    .empty-icon { font-size: 2rem; margin-bottom: 10px; }
+    .empty-text { font-size: 0.875rem; color: #6B8A8A; line-height: 1.6; }
+    .error-state { background: #FDF8F0; border: 1px solid #E0B84A; border-radius: 12px; padding: 16px 20px; }
+    .error-text { font-size: 0.875rem; color: #6B4C0A; margin-bottom: 10px; line-height: 1.5; }
+    .retry-btn { background: none; border: 1.5px solid #9B7030; color: #9B7030; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.18s; }
+    .retry-btn:hover { background: #FFF3D6; }
+    .info-banner { background: #F0F6F5; border: 1px solid #B5D9D2; border-radius: 10px; padding: 12px 14px; font-size: 0.84rem; color: #2D5A52; margin-bottom: 14px; line-height: 1.5; }
+
+    /* === MODAL === */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(10,20,20,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(3px); animation: fadeInOverlay 0.2s ease; }
+    @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+    .modal-box { background: white; border-radius: 16px; max-width: 440px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.22); animation: scaleIn 0.2s ease; max-height: 88vh; overflow-y: auto; position: relative; }
+    @keyframes scaleIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-inner { padding: 28px; }
+    .modal-close { position: sticky; float: right; top: 0; margin: -4px -4px 0 0; background: none; border: none; cursor: pointer; color: #6B8A8A; font-size: 1rem; padding: 6px; border-radius: 8px; transition: all 0.15s; line-height: 1; }
+    .modal-close:hover { background: #F0F4F8; color: #1C2B2B; }
+    .modal-title { font-family: 'Source Serif 4', serif; font-size: 1.18rem; font-weight: 700; color: #1C2B2B; margin-bottom: 14px; clear: both; }
+    .modal-body { font-size: 0.88rem; color: #2D3F3F; line-height: 1.72; }
+    .modal-body p { margin-bottom: 10px; }
+    .modal-body ul { padding-left: 20px; margin-bottom: 10px; }
+    .modal-body li { margin-bottom: 6px; }
+    .modal-body strong { color: #1C2B2B; font-weight: 600; }
+    .modal-attribution { margin-top: 16px; padding-top: 14px; border-top: 1px solid #E8EDF2; font-size: 0.77rem; color: #6B8A8A; font-style: italic; line-height: 1.55; }
+
+    /* === FOOTER === */
+    footer { border-top: 1px solid #E8EDF2; background: white; margin-top: 48px; }
+    .footer-inner { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+    .footer-attribution { font-size: 0.79rem; color: #6B8A8A; line-height: 1.65; margin-bottom: 14px; font-style: italic; }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links a { color: #4A9B8E; font-size: 0.8rem; text-decoration: none; font-weight: 500; }
+    .footer-links a:hover { text-decoration: underline; }
+
+    /* === UTILITIES === */
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    .mt-8 { margin-top: 8px; }
+    .mt-14 { margin-top: 14px; }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 1023px) { .panels-grid { grid-template-columns: 1fr; } .drug-panel { border-right: none; border-bottom: 1px solid #E8EDF2; } .drug-panel:last-child { border-bottom: none; } }
+    @media (max-width: 767px) { .search-row { flex-direction: column; } .swap-btn { align-self: center; transform: none !important; } .swap-btn:hover { transform: rotate(180deg) !important; } main { padding: 16px; } .header-inner { padding: 12px 16px; } .tool-tagline { display: none; } .recall-stats { flex-wrap: wrap; } }
+    @media (max-width: 480px) { .tab-btn { padding: 8px 12px; font-size: 0.8rem; } .modal-inner { padding: 20px; } .card { padding: 14px; } }
+
+    /* === FOCUS INDICATORS === */
+    :focus-visible { outline: 2px solid #4A9B8E; outline-offset: 2px; border-radius: 4px; }
+
+    /* === TOUCH TARGETS (mobile) === */
+    @media (hover: none) { .tab-btn, .info-btn, .accordion-header, .autocomplete-item { min-height: 44px; } }
+
+    /* Load more button */
+    .load-more-btn { width: 100%; padding: 10px; background: none; border: 1.5px solid #E8EDF2; border-radius: 10px; color: #4A9B8E; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.18s; margin-top: 4px; }
+    .load-more-btn:hover { background: #EAF6F4; border-color: #4A9B8E; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-area">
+        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+        <div>
+          <h1 class="tool-title">Drug Safety Explorer</h1>
+          <p class="tool-tagline">Explore FDA drug safety data — clearly and calmly.</p>
+        </div>
+      </div>
+      <button class="about-btn" id="about-btn" aria-label="About this tool">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        About
+      </button>
+    </div>
+  </header>
+
+  <!-- DISCLAIMER BANNER (full) -->
+  <div id="disclaimer-full" role="note">
+    <div class="disclaimer-inner">
+      <div class="disclaimer-icon-wrap" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <p class="disclaimer-text">
+        <strong>Educational use only.</strong> This tool is for educational and informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider with questions about medications or medical conditions.
+      </p>
+      <button class="disclaimer-collapse-btn" id="collapse-disclaimer-btn" aria-expanded="true">Collapse ▲</button>
+    </div>
+  </div>
+  <!-- DISCLAIMER collapsed bar -->
+  <div id="disclaimer-bar" class="hidden">
+    <a href="#" id="expand-disclaimer-btn" role="button">⚕ Educational disclaimer — tap to read</a>
+  </div>
+
+  <!-- MAIN -->
+  <main>
+    <!-- Search Section -->
+    <section class="search-section" aria-label="Drug search">
+      <div class="search-row">
+        <!-- Drug A -->
+        <div class="search-slot slot-a" id="slot-a-wrap">
+          <div class="search-label-row">
+            <span class="search-slot-label">Drug A</span>
+            <button class="info-btn" data-modal="drug-names" aria-label="How drug names work">ⓘ</button>
+          </div>
+          <div class="search-input-wrap">
+            <input type="text" class="search-input" id="input-a" placeholder="e.g. Ibuprofen" autocomplete="off" aria-label="Drug A search" aria-autocomplete="list" aria-controls="ac-list-a">
+            <div class="search-spinner" id="spinner-a" aria-hidden="true"></div>
+          </div>
+          <div id="ac-list-a" class="autocomplete-list hidden" role="listbox" aria-label="Drug A suggestions"></div>
+        </div>
+
+        <!-- Swap button -->
+        <button class="swap-btn" id="swap-btn" aria-label="Swap Drug A and Drug B" title="Swap drugs">⇄</button>
+
+        <!-- Drug B -->
+        <div class="search-slot slot-b" id="slot-b-wrap">
+          <div class="search-label-row">
+            <span class="search-slot-label">Drug B</span>
+            <button class="info-btn" data-modal="drug-names" aria-label="How drug names work">ⓘ</button>
+          </div>
+          <div class="search-input-wrap">
+            <input type="text" class="search-input" id="input-b" placeholder="e.g. Acetaminophen" autocomplete="off" aria-label="Drug B search" aria-autocomplete="list" aria-controls="ac-list-b">
+            <div class="search-spinner" id="spinner-b" aria-hidden="true"></div>
+          </div>
+          <div id="ac-list-b" class="autocomplete-list hidden" role="listbox" aria-label="Drug B suggestions"></div>
+        </div>
+      </div>
+      <div id="same-drug-notice" class="same-drug-notice hidden" role="alert">
+        ⚡ These two drugs may share the same active ingredient. Results may look similar.
+      </div>
+    </section>
+
+    <!-- Comparison Panel -->
+    <section class="comparison-panel" aria-label="Drug comparison">
+      <!-- Tab Navigation -->
+      <nav class="tab-nav" role="tablist" aria-label="Data categories">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="overview" id="tab-overview">📋 Overview</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="adverse" id="tab-adverse">⚠️ Adverse Events</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="recalls" id="tab-recalls">🔔 Recalls</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="labeling" id="tab-labeling">📄 Labeling</button>
+      </nav>
+
+      <div class="panels-grid">
+        <!-- Drug A Panel -->
+        <div class="drug-panel slot-a" id="panel-a" role="tabpanel" aria-labelledby="tab-overview">
+          <div class="panel-header">
+            <span class="drug-slot-badge slot-a-badge">Drug A</span>
+            <span class="panel-drug-name mono" id="panel-a-name">—</span>
+          </div>
+          <div id="content-a"></div>
+        </div>
+
+        <!-- Drug B Panel -->
+        <div class="drug-panel slot-b" id="panel-b" role="tabpanel" aria-labelledby="tab-overview">
+          <div class="panel-header">
+            <span class="drug-slot-badge slot-b-badge">Drug B</span>
+            <span class="panel-drug-name mono" id="panel-b-name">—</span>
+          </div>
+          <div id="content-b"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <p class="footer-attribution">
+        This product uses publicly available data from the U.S. Food and Drug Administration (FDA). FDA is not responsible for the product and does not endorse or recommend this or any other product.
+      </p>
+      <div class="footer-links">
+        <a href="https://open.fda.gov" target="_blank" rel="noopener noreferrer">OpenFDA API</a>
+        <a href="https://www.fda.gov" target="_blank" rel="noopener noreferrer">FDA.gov</a>
+        <a href="https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts" target="_blank" rel="noopener noreferrer">FDA Recalls</a>
+        <a href="https://www.fda.gov/drugs/questions-answers/faers-public-dashboard" target="_blank" rel="noopener noreferrer">FAERS Dashboard</a>
+        <a href="#" id="footer-disclaimer-link">Educational Disclaimer</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL OVERLAY -->
+  <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+    <div class="modal-box" id="modal-box">
+      <div class="modal-inner">
+        <button class="modal-close" id="modal-close-btn" aria-label="Close dialog">✕</button>
+        <h2 class="modal-title" id="modal-heading"></h2>
+        <div class="modal-body" id="modal-body-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aria live region for dynamic updates -->
+  <div id="aria-live" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+<script>
+'use strict';
+
+/* ===== CONSTANTS ===== */
+const FDA_BASE = 'https://api.fda.gov';
+
+const OUTCOME_LABELS = {
+  '1': 'Recovered / Resolved',
+  '2': 'Recovering / Resolving',
+  '3': 'Not Recovered / Ongoing',
+  '4': 'Recovered with Sequelae',
+  '5': 'Fatal',
+  '6': 'Unknown'
+};
+
+const OUTCOME_COLORS = {
+  '1': '#3D8C6A',
+  '2': '#4A9B8E',
+  '3': '#C4963A',
+  '4': '#6B7FA3',
+  '5': '#7B3030',
+  '6': '#9BA8B5'
+};
+
+const SLOT_COLORS = { a: '#4A9B8E', b: '#6B7FA3' };
+
+/* ===== STATE ===== */
+const state = {
+  a: { displayName: 'Ibuprofen', genericName: null, labelData: null, totalEvents: 0, topReactions: [], outcomes: [], recallData: [], labelTabData: null, loaded: false, loading: false, error: null },
+  b: { displayName: 'Acetaminophen', genericName: null, labelData: null, totalEvents: 0, topReactions: [], outcomes: [], recallData: [], labelTabData: null, loaded: false, loading: false, error: null },
+  activeTab: 'overview',
+  charts: { a: {}, b: {} },
+  disclaimerCollapsed: false
+};
+
+/* ===== DEBOUNCE ===== */
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
+/* ===== HTML ESCAPE ===== */
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ===== ARIA LIVE ===== */
+function announce(msg) {
+  const el = document.getElementById('aria-live');
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
+/* ===== API ===== */
+async function apiFetch(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.status === 429) throw Object.assign(new Error('Rate limit reached. Please wait a moment and try again.'), { type: 'RATE_LIMIT' });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`API error (HTTP ${res.status})`);
+    return await res.json();
+  } catch (e) {
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') throw Object.assign(new Error('Request timed out. Check your connection and try again.'), { type: 'TIMEOUT' });
+    throw e;
+  }
+}
+
+async function fetchAutocomplete(term) {
+  const enc = encodeURIComponent(term);
+  const url = `${FDA_BASE}/drug/label.json?search=openfda.generic_name:${enc}+openfda.brand_name:${enc}&limit=7`;
+  const data = await apiFetch(url);
+  return (data && data.results) ? data.results : [];
+}
+
+async function fetchLabelForDrug(name) {
+  const enc = encodeURIComponent('"' + name + '"');
+  // Try generic name first, then brand name
+  let data = await apiFetch(`${FDA_BASE}/drug/label.json?search=openfda.generic_name:${enc}&limit=1`);
+  if (!data || !data.results || !data.results.length) {
+    data = await apiFetch(`${FDA_BASE}/drug/label.json?search=openfda.brand_name:${enc}&limit=1`);
+  }
+  return (data && data.results && data.results.length) ? data.results[0] : null;
+}
+
+async function fetchTotalEvents(genericName) {
+  const enc = encodeURIComponent(genericName);
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&limit=1`);
+  return (data && data.meta && data.meta.results) ? data.meta.results.total : 0;
+}
+
+async function fetchTopReactions(genericName) {
+  const enc = encodeURIComponent(genericName);
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&count=patient.reaction.reactionmeddrapt.exact&limit=10`);
+  return (data && data.results) ? data.results : [];
+}
+
+async function fetchOutcomes(genericName) {
+  const enc = encodeURIComponent(genericName);
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&count=patient.reaction.reactionoutcome&limit=10`);
+  return (data && data.results) ? data.results : [];
+}
+
+async function fetchRecalls(drugName) {
+  const enc = encodeURIComponent(drugName);
+  const data = await apiFetch(`${FDA_BASE}/drug/enforcement.json?search=product_description:"${enc}"&sort=recall_initiation_date:desc&limit=25`);
+  return (data && data.results) ? data.results : [];
+}
+
+async function fetchTrendData(genericName) {
+  const enc = encodeURIComponent(genericName);
+  const data = await apiFetch(`${FDA_BASE}/drug/event.json?search=patient.drug.openfda.generic_name.exact:"${enc}"&count=receivedate&limit=200`);
+  return (data && data.results) ? data.results : [];
+}
+
+/* ===== LOAD ALL DATA FOR A DRUG ===== */
+async function loadDrug(slot, name) {
+  const s = state[slot];
+  s.displayName = name;
+  s.loading = true;
+  s.loaded = false;
+  s.error = null;
+  s.labelData = null;
+  s.genericName = null;
+  s.totalEvents = 0;
+  s.topReactions = [];
+  s.outcomes = [];
+  s.recallData = [];
+  s.labelTabData = null;
+
+  // Update panel header
+  document.getElementById(`panel-${slot}-name`).textContent = name;
+
+  // Show skeleton
+  renderSkeleton(slot);
+  announce(`Loading data for ${name}...`);
+
+  try {
+    // Step 1: Get label
+    const labelData = await fetchLabelForDrug(name);
+    if (!labelData) {
+      throw Object.assign(new Error(`We couldn't find "${name}" in the FDA database. Try a generic name (e.g., 'ibuprofen' instead of 'Advil'), or check spelling.`), { type: 'NOT_FOUND' });
+    }
+    s.labelData = labelData;
+    const openfda = labelData.openfda || {};
+    const genericName = (openfda.generic_name || [name])[0].toLowerCase();
+    s.genericName = genericName;
+    s.labelTabData = labelData;
+
+    // Update display name with official name
+    const officialName = (openfda.generic_name || [name])[0];
+    s.displayName = officialName;
+    document.getElementById(`panel-${slot}-name`).textContent = officialName;
+    document.getElementById(`input-${slot}`).value = officialName;
+
+    // Step 2: Fetch all remaining data in parallel
+    const [totalEvents, topReactions, outcomes, recallData] = await Promise.allSettled([
+      fetchTotalEvents(genericName),
+      fetchTopReactions(genericName),
+      fetchOutcomes(genericName),
+      fetchRecalls(genericName)
+    ]);
+
+    s.totalEvents = totalEvents.status === 'fulfilled' ? totalEvents.value : 0;
+    s.topReactions = topReactions.status === 'fulfilled' ? topReactions.value : [];
+    s.outcomes = outcomes.status === 'fulfilled' ? outcomes.value : [];
+    s.recallData = recallData.status === 'fulfilled' ? recallData.value : [];
+
+    s.loading = false;
+    s.loaded = true;
+
+    // Check same-drug warning
+    checkSameDrugWarning();
+
+    // Render current tab
+    renderTabContent(slot);
+    announce(`Data loaded for ${officialName}.`);
+  } catch (err) {
+    s.loading = false;
+    s.error = err.message || 'An unexpected error occurred.';
+    renderError(slot, s.error, err.type);
+    announce(`Error loading data for ${name}.`);
+  }
+}
+
+function checkSameDrugWarning() {
+  const notice = document.getElementById('same-drug-notice');
+  const ga = state.a.genericName;
+  const gb = state.b.genericName;
+  if (ga && gb && ga === gb) {
+    notice.classList.remove('hidden');
+  } else {
+    notice.classList.add('hidden');
+  }
+}
+
+/* ===== SKELETON LOADER ===== */
+function renderSkeleton(slot) {
+  const el = document.getElementById(`content-${slot}`);
+  el.innerHTML = `
+    <div class="panel-content">
+      <div class="card" style="text-align:center;padding:24px 18px;">
+        <div class="skeleton sk-number"></div>
+        <div class="skeleton sk-line sk-medium" style="margin:0 auto;"></div>
+      </div>
+      <div class="card">
+        ${[1,2,3,4,5].map(() => `
+          <div class="info-field">
+            <div class="skeleton sk-line" style="width:90px;height:12px;"></div>
+            <div class="skeleton sk-line" style="width:${60+Math.floor(Math.random()*80)}px;height:12px;margin:0;"></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+function renderSkeletonAdverse(slot) {
+  const el = document.getElementById(`content-${slot}`);
+  el.innerHTML = `
+    <div class="panel-content">
+      <div class="card">
+        <div class="section-heading-row"><div class="skeleton sk-line" style="width:160px;height:14px;"></div></div>
+        <div class="sk-bars">
+          ${[90,75,60,80,50,70,55,65,45,85].map(w => `<div class="skeleton sk-bar" style="width:${w}%;"></div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-heading-row"><div class="skeleton sk-line" style="width:130px;height:14px;"></div></div>
+        <div class="skeleton sk-block" style="height:200px;"></div>
+      </div>
+    </div>`;
+}
+
+/* ===== ERROR STATE ===== */
+function renderError(slot, message, type) {
+  const el = document.getElementById(`content-${slot}`);
+  const icon = type === 'NOT_FOUND' ? '🔍' : type === 'RATE_LIMIT' ? '⏱' : '⚠️';
+  el.innerHTML = `
+    <div class="panel-content">
+      <div class="error-state">
+        <div style="font-size:1.6rem;margin-bottom:10px;">${icon}</div>
+        <p class="error-text">${esc(message)}</p>
+        ${type !== 'NOT_FOUND' ? `<button class="retry-btn" onclick="loadDrug('${slot}', '${esc(state[slot].displayName)}')">↻ Retry</button>` : ''}
+      </div>
+    </div>`;
+}
+
+/* ===== RENDER TAB CONTENT ===== */
+function renderTabContent(slot) {
+  const s = state[slot];
+  if (!s.loaded && !s.error) {
+    if (!s.loading) renderWelcomeState(slot);
+    return;
+  }
+  if (s.error && !s.loaded) return; // already rendered error
+
+  destroyCharts(slot);
+
+  switch (state.activeTab) {
+    case 'overview':  renderOverviewTab(slot); break;
+    case 'adverse':   renderAdverseTab(slot); break;
+    case 'recalls':   renderRecallsTab(slot); break;
+    case 'labeling':  renderLabelingTab(slot); break;
+  }
+}
+
+function renderAllPanels() {
+  renderTabContent('a');
+  renderTabContent('b');
+}
+
+function renderWelcomeState(slot) {
+  const el = document.getElementById(`content-${slot}`);
+  el.innerHTML = `<div class="empty-state"><div class="empty-icon">💊</div><p class="empty-text">Search for a drug above to view its safety data.</p></div>`;
+}
+
+/* ===== OVERVIEW TAB ===== */
+function renderOverviewTab(slot) {
+  const s = state[slot];
+  const el = document.getElementById(`content-${slot}`);
+  const openfda = (s.labelData && s.labelData.openfda) || {};
+
+  const genericName = (openfda.generic_name || ['N/A'])[0];
+  const brandNames = [...new Set(openfda.brand_name || [])].slice(0, 4).join(', ') || 'N/A';
+  const manufacturer = (openfda.manufacturer_name || ['N/A'])[0];
+  const drugClass = (openfda.pharm_class_epc || []).slice(0, 3);
+  const route = (openfda.route || []).slice(0, 4);
+
+  const pillsHtml = (arr) => arr.length
+    ? arr.map(v => `<span class="pill-badge">${esc(formatTitle(v))}</span>`).join('')
+    : '<span style="color:#9BA8B5;font-size:0.83rem;">N/A</span>';
+
+  el.innerHTML = `
+    <div class="panel-content">
+      <div class="card card-white stat-callout">
+        <div class="stat-number slot-${slot}">${s.totalEvents > 0 ? Number(s.totalEvents).toLocaleString() : '—'}</div>
+        <div class="stat-label-row">
+          <span class="stat-label">Total Adverse Event Reports</span>
+          <button class="info-btn" data-modal="report-counts" aria-label="Why some drugs have more reports">ⓘ</button>
+        </div>
+      </div>
+
+      <div class="card card-white">
+        <div class="info-field">
+          <span class="field-label">Generic Name</span>
+          <span class="field-value mono" style="font-size:0.85rem;">${esc(genericName)}</span>
+        </div>
+        <div class="info-field">
+          <span class="field-label">Brand Name(s)</span>
+          <span class="field-value" style="font-size:0.83rem;">${esc(brandNames)}</span>
+        </div>
+        <div class="info-field">
+          <span class="field-label">Manufacturer</span>
+          <span class="field-value" style="font-size:0.82rem;">${esc(manufacturer.length > 45 ? manufacturer.slice(0,43)+'…' : manufacturer)}</span>
+        </div>
+        <div class="info-field">
+          <span class="field-label">Drug Class</span>
+          <span class="field-value">${pillsHtml(drugClass)}</span>
+        </div>
+        <div class="info-field">
+          <span class="field-label">Route</span>
+          <span class="field-value">${pillsHtml(route)}</span>
+        </div>
+      </div>
+    </div>`;
+
+  bindInfoButtons(el);
+}
+
+/* ===== ADVERSE EVENTS TAB ===== */
+function renderAdverseTab(slot) {
+  const s = state[slot];
+  const el = document.getElementById(`content-${slot}`);
+  const color = SLOT_COLORS[slot];
+  const barCanvasId = `bar-chart-${slot}`;
+  const donutCanvasId = `donut-chart-${slot}`;
+  const tableId = `reactions-table-${slot}`;
+
+  const hasReactions = s.topReactions && s.topReactions.length > 0;
+  const hasOutcomes = s.outcomes && s.outcomes.length > 0;
+
+  el.innerHTML = `
+    <div class="panel-content">
+      ${!hasReactions && !hasOutcomes ? `
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p class="empty-text">No adverse event reports found for <strong>${esc(s.displayName)}</strong>. This may indicate limited reporting, or the drug name may not match FDA records exactly.</p>
+        </div>
+      ` : ''}
+
+      ${hasReactions ? `
+        <div class="card card-white">
+          <div class="section-heading-row">
+            <h3 class="section-heading">Top Reported Reactions</h3>
+            <button class="info-btn" data-modal="adverse-events" aria-label="How to interpret adverse event data">ⓘ</button>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="${barCanvasId}" aria-label="Top 10 adverse reactions bar chart for ${esc(s.displayName)}" role="img"></canvas>
+          </div>
+          <button class="chart-table-toggle mt-8" onclick="toggleTable('${tableId}')">Show as table (screen reader)</button>
+          <table id="${tableId}" class="data-table" aria-label="Top reactions for ${esc(s.displayName)}">
+            <thead><tr><th>Reaction</th><th>Reports</th></tr></thead>
+            <tbody>
+              ${s.topReactions.map(r => `<tr><td>${esc(formatTitle(r.term))}</td><td>${Number(r.count).toLocaleString()}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
+
+      ${hasOutcomes ? `
+        <div class="card card-white">
+          <div class="section-heading-row">
+            <h3 class="section-heading">Reported Outcomes</h3>
+            <button class="info-btn" data-modal="outcomes" aria-label="What do outcomes mean?">ⓘ</button>
+          </div>
+          <div class="chart-wrap" style="max-width:320px;margin:0 auto;">
+            <canvas id="${donutCanvasId}" aria-label="Outcome breakdown donut chart for ${esc(s.displayName)}" role="img"></canvas>
+          </div>
+        </div>
+      ` : ''}
+    </div>`;
+
+  bindInfoButtons(el);
+
+  // Create charts after DOM update
+  if (hasReactions) {
+    requestAnimationFrame(() => {
+      const labels = s.topReactions.map(r => formatTitle(r.term));
+      const data = s.topReactions.map(r => r.count);
+      const total = data.reduce((a,b) => a+b, 0);
+      const ctx = document.getElementById(barCanvasId);
+      if (!ctx) return;
+      destroyChart(slot, 'bar');
+      state.charts[slot].bar = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: color + 'B0',
+            borderColor: color,
+            borderWidth: 1,
+            borderRadius: 5,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                  return ` ${Number(ctx.raw).toLocaleString()} reports (${pct}% of top 10)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#F0F4F8' },
+              ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6B8A8A' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: {
+                font: { family: 'DM Sans', size: 11 },
+                color: '#3A5050',
+                callback: function(val, idx) {
+                  const lbl = labels[idx] || '';
+                  return lbl.length > 28 ? lbl.slice(0, 26) + '…' : lbl;
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  }
+
+  if (hasOutcomes) {
+    requestAnimationFrame(() => {
+      const filtered = s.outcomes.filter(d => OUTCOME_LABELS[d.term]);
+      const labels = filtered.map(d => OUTCOME_LABELS[d.term]);
+      const data = filtered.map(d => d.count);
+      const colors = filtered.map(d => OUTCOME_COLORS[d.term]);
+      const ctx = document.getElementById(donutCanvasId);
+      if (!ctx) return;
+      destroyChart(slot, 'donut');
+      state.charts[slot].donut = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: 'white',
+            hoverBorderWidth: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '62%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: { family: 'DM Sans', size: 11 },
+                padding: 10,
+                usePointStyle: true,
+                pointStyleWidth: 10,
+                color: '#3A5050'
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const total = ctx.dataset.data.reduce((a,b)=>a+b, 0);
+                  const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                  return ` ${Number(ctx.raw).toLocaleString()} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  }
+}
+
+function toggleTable(tableId) {
+  const tbl = document.getElementById(tableId);
+  if (!tbl) return;
+  tbl.classList.toggle('visible');
+  const btn = tbl.previousElementSibling;
+  if (btn) btn.textContent = tbl.classList.contains('visible') ? 'Hide table' : 'Show as table (screen reader)';
+}
+
+/* ===== RECALLS TAB ===== */
+function renderRecallsTab(slot) {
+  const s = state[slot];
+  const el = document.getElementById(`content-${slot}`);
+  const recalls = s.recallData || [];
+
+  if (recalls.length === 0) {
+    el.innerHTML = `
+      <div class="panel-content">
+        <div class="section-heading-row">
+          <h3 class="section-heading">Recalls</h3>
+          <button class="info-btn" data-modal="recalls" aria-label="Understanding recall classifications">ⓘ</button>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <p class="empty-text">No recalls found for <strong>${esc(s.displayName)}</strong> in the OpenFDA database. This may mean no recalls have been issued, or that the product description didn't match FDA records. Consider searching by brand name or active ingredient.</p>
+        </div>
+      </div>`;
+    bindInfoButtons(el);
+    return;
+  }
+
+  const classI = recalls.filter(r => r.classification === 'Class I').length;
+  const classII = recalls.filter(r => r.classification === 'Class II').length;
+  const classIII = recalls.filter(r => r.classification === 'Class III').length;
+  const latestDate = recalls[0] ? formatDate(recalls[0].recall_initiation_date) : 'N/A';
+
+  el.innerHTML = `
+    <div class="panel-content">
+      <div class="section-heading-row">
+        <h3 class="section-heading">Recalls</h3>
+        <button class="info-btn" data-modal="recalls" aria-label="Understanding recall classifications">ⓘ</button>
+      </div>
+
+      <div class="recall-stats" role="group" aria-label="Recall summary statistics">
+        <div class="recall-stat-card">
+          <div class="recall-stat-num">${recalls.length}</div>
+          <div class="recall-stat-lbl">Total Found</div>
+        </div>
+        <div class="recall-stat-card">
+          <div class="recall-stat-num" style="color:${classI>0?'#7B2424':'#1C2B2B'};">${classI}</div>
+          <div class="recall-stat-lbl">Class I</div>
+        </div>
+        <div class="recall-stat-card">
+          <div class="recall-stat-num">${classII}</div>
+          <div class="recall-stat-lbl">Class II</div>
+        </div>
+        <div class="recall-stat-card">
+          <div class="recall-stat-num">${classIII}</div>
+          <div class="recall-stat-lbl">Class III</div>
+        </div>
+      </div>
+
+      <div class="recall-timeline" role="list" aria-label="Recall timeline">
+        ${recalls.slice(0, 10).map((r, i) => renderRecallItem(r, i, i === recalls.length - 1 || i === 9)).join('')}
+      </div>
+      ${recalls.length > 10 ? `<button class="load-more-btn" onclick="showAllRecalls('${slot}')">Show all ${recalls.length} recalls ▾</button>` : ''}
+    </div>`;
+
+  bindInfoButtons(el);
+}
+
+window.showAllRecalls = function(slot) {
+  const s = state[slot];
+  const el = document.getElementById(`content-${slot}`);
+  const timelineEl = el.querySelector('.recall-timeline');
+  const btnEl = el.querySelector('.load-more-btn');
+  if (!timelineEl || !btnEl) return;
+  timelineEl.innerHTML = (s.recallData || []).map((r, i) => renderRecallItem(r, i, i === s.recallData.length - 1)).join('');
+  btnEl.remove();
+};
+
+function renderRecallItem(r, i, isLast) {
+  const cls = getRecallClass(r.classification);
+  const dotClass = cls.dotClass;
+  const cardClass = cls.cardClass;
+  const badgeClass = cls.badgeClass;
+  const product = r.product_description ? r.product_description.slice(0, 120) + (r.product_description.length > 120 ? '…' : '') : 'N/A';
+  const reason = r.reason_for_recall ? r.reason_for_recall.slice(0, 200) + (r.reason_for_recall.length > 200 ? '…' : '') : 'N/A';
+  return `
+    <div class="recall-item" role="listitem">
+      <div class="timeline-col" aria-hidden="true">
+        <div class="timeline-dot ${dotClass}"></div>
+        ${!isLast ? '<div class="timeline-line"></div>' : ''}
+      </div>
+      <div class="recall-card ${cardClass}">
+        <span class="class-badge ${badgeClass}">${esc(r.classification || 'Unclassified')}</span>
+        <div class="recall-date">📅 ${formatDate(r.recall_initiation_date)}</div>
+        <div class="recall-product">${esc(product)}</div>
+        <div class="recall-reason">${esc(reason)}</div>
+        <div class="recall-firm">🏢 ${esc(r.recalling_firm || 'N/A')}</div>
+        ${r.status ? `<span class="recall-status-pill">${esc(r.status)}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+function getRecallClass(classification) {
+  if (!classification) return { dotClass: 'class-default-dot', cardClass: 'class-default-card', badgeClass: 'class-default-badge' };
+  const c = classification.trim().toLowerCase();
+  if (c === 'class i') return { dotClass: 'class-i-dot', cardClass: 'class-i-card', badgeClass: 'class-i-badge' };
+  if (c === 'class ii') return { dotClass: 'class-ii-dot', cardClass: 'class-ii-card', badgeClass: 'class-ii-badge' };
+  if (c === 'class iii') return { dotClass: 'class-iii-dot', cardClass: 'class-iii-card', badgeClass: 'class-iii-badge' };
+  return { dotClass: 'class-default-dot', cardClass: 'class-default-card', badgeClass: 'class-default-badge' };
+}
+
+/* ===== LABELING TAB ===== */
+function renderLabelingTab(slot) {
+  const s = state[slot];
+  const el = document.getElementById(`content-${slot}`);
+  const label = s.labelTabData;
+
+  if (!label) {
+    el.innerHTML = `<div class="panel-content"><div class="empty-state"><div class="empty-icon">📄</div><p class="empty-text">No labeling data available.</p></div></div>`;
+    return;
+  }
+
+  const sections = [
+    { key: 'indications_and_usage', title: 'Indications & Usage', defaultOpen: true },
+    { key: 'warnings', title: 'Warnings', defaultOpen: false },
+    { key: 'contraindications', title: 'Contraindications', defaultOpen: false },
+    { key: 'adverse_reactions', title: 'Adverse Reactions', defaultOpen: false },
+  ];
+
+  const boxedWarning = label.boxed_warning ? label.boxed_warning[0] : null;
+
+  const accordionsHtml = sections.map(sec => {
+    const rawText = label[sec.key] ? label[sec.key][0] : null;
+    if (!rawText) return ''; // hide if missing per spec
+    const cleanText = rawText.replace(/\s+/g, ' ').trim();
+    return `
+      <div class="accordion-item">
+        <button class="accordion-header${sec.defaultOpen ? ' open' : ''}" aria-expanded="${sec.defaultOpen}" onclick="toggleAccordion(this)">
+          ${esc(sec.title)}
+          <span class="chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="accordion-body${sec.defaultOpen ? ' open' : ''}">
+          <div class="accordion-body-inner">${esc(cleanText)}</div>
+        </div>
+      </div>`;
+  }).filter(Boolean).join('');
+
+  el.innerHTML = `
+    <div class="panel-content">
+      <div class="section-heading-row">
+        <h3 class="section-heading">Labeling Highlights</h3>
+        <button class="info-btn" data-modal="labeling" aria-label="About drug labeling">ⓘ</button>
+      </div>
+
+      ${boxedWarning ? `
+        <div class="boxed-warning-card" role="note">
+          <div class="boxed-warning-label">
+            ⬛ Boxed Warning
+          </div>
+          <div class="boxed-warning-text">${esc(boxedWarning.replace(/\s+/g, ' ').trim().slice(0, 600))}${boxedWarning.length > 600 ? '…' : ''}</div>
+        </div>
+      ` : ''}
+
+      ${accordionsHtml || '<div class="info-banner">No standard label sections found for this drug in the FDA database.</div>'}
+    </div>`;
+
+  bindInfoButtons(el);
+}
+
+window.toggleAccordion = function(headerEl) {
+  const isOpen = headerEl.classList.contains('open');
+  headerEl.classList.toggle('open', !isOpen);
+  headerEl.setAttribute('aria-expanded', String(!isOpen));
+  const body = headerEl.nextElementSibling;
+  if (body) body.classList.toggle('open', !isOpen);
+};
+
+/* ===== CHART CLEANUP ===== */
+function destroyChart(slot, type) {
+  if (state.charts[slot][type]) {
+    state.charts[slot][type].destroy();
+    state.charts[slot][type] = null;
+  }
+}
+
+function destroyCharts(slot) {
+  Object.keys(state.charts[slot]).forEach(k => {
+    if (state.charts[slot][k]) {
+      state.charts[slot][k].destroy();
+      state.charts[slot][k] = null;
+    }
+  });
+}
+
+/* ===== FORMATTING HELPERS ===== */
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  const s = String(dateStr).replace(/-/g, '');
+  if (s.length >= 8) {
+    const y = s.slice(0, 4), m = s.slice(4, 6), d = s.slice(6, 8);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const mo = parseInt(m, 10);
+    return `${months[mo-1] || m} ${parseInt(d,10)}, ${y}`;
+  }
+  return dateStr;
+}
+
+function formatTitle(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    .replace(/\b([a-z])/g, (m, p) => m === p && ['and','or','of','the','in','a','an'].includes(p) ? p : p.toUpperCase())
+    .replace(/\b(and|or|of|the|in|a|an)\b/g, v => v);
+}
+
+/* ===== BIND INFO BUTTONS ===== */
+function bindInfoButtons(container) {
+  container.querySelectorAll('.info-btn[data-modal]').forEach(btn => {
+    btn.addEventListener('click', () => openModal(btn.dataset.modal));
+  });
+}
+
+/* ===== TAB SWITCHING ===== */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    if (tab === state.activeTab) return;
+
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tab);
+      b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    });
+
+    state.activeTab = tab;
+    destroyCharts('a');
+    destroyCharts('b');
+    renderAllPanels();
+  });
+});
+
+/* ===== AUTOCOMPLETE ===== */
+function setupAutocomplete(slot) {
+  const input = document.getElementById(`input-${slot}`);
+  const list = document.getElementById(`ac-list-${slot}`);
+  const spinner = document.getElementById(`spinner-${slot}`);
+  let hiIdx = -1;
+
+  const doSearch = debounce(async (term) => {
+    if (term.length < 2) { list.classList.add('hidden'); return; }
+    spinner.classList.add('visible');
+    try {
+      const results = await fetchAutocomplete(term);
+      spinner.classList.remove('visible');
+      if (!results.length) {
+        list.innerHTML = `<div class="ac-no-results">No results for "${esc(term)}". Try a generic name like "ibuprofen".</div>`;
+        list.classList.remove('hidden');
+        return;
+      }
+      // Deduplicate by generic name
+      const seen = new Set();
+      const unique = results.filter(r => {
+        const gn = (r.openfda && r.openfda.generic_name && r.openfda.generic_name[0]) || '';
+        if (seen.has(gn.toLowerCase())) return false;
+        seen.add(gn.toLowerCase());
+        return true;
+      });
+      list.innerHTML = unique.map((r, i) => {
+        const gn = (r.openfda && r.openfda.generic_name && r.openfda.generic_name[0]) || 'Unknown';
+        const bn = (r.openfda && r.openfda.brand_name && r.openfda.brand_name.slice(0,3).join(', ')) || '';
+        return `<div class="autocomplete-item" role="option" tabindex="-1" data-idx="${i}" data-generic="${esc(gn)}">
+          <div class="ac-generic">${esc(gn)}</div>
+          ${bn ? `<div class="ac-brand">${esc(bn)}</div>` : ''}
+        </div>`;
+      }).join('');
+      list.classList.remove('hidden');
+      hiIdx = -1;
+
+      list.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          selectDrug(slot, item.dataset.generic);
+        });
+      });
+    } catch (e) {
+      spinner.classList.remove('visible');
+      list.innerHTML = `<div class="ac-no-results">Could not reach the FDA database. Check your connection.</div>`;
+      list.classList.remove('hidden');
+    }
+  }, 300);
+
+  input.addEventListener('input', () => { hiIdx = -1; doSearch(input.value.trim()); });
+
+  input.addEventListener('keydown', (e) => {
+    const items = list.querySelectorAll('.autocomplete-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      hiIdx = Math.min(hiIdx + 1, items.length - 1);
+      updateHighlight(items, hiIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      hiIdx = Math.max(hiIdx - 1, 0);
+      updateHighlight(items, hiIdx);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (hiIdx >= 0 && items[hiIdx]) {
+        selectDrug(slot, items[hiIdx].dataset.generic);
+      } else if (input.value.trim().length >= 2) {
+        list.classList.add('hidden');
+        selectDrug(slot, input.value.trim());
+      }
+    } else if (e.key === 'Escape') {
+      list.classList.add('hidden');
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => list.classList.add('hidden'), 200);
+  });
+
+  input.addEventListener('focus', () => {
+    if (list.children.length > 0 && !list.classList.contains('hidden')) {
+      // keep open
+    }
+  });
+}
+
+function updateHighlight(items, idx) {
+  items.forEach((item, i) => item.classList.toggle('highlighted', i === idx));
+  if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+}
+
+function selectDrug(slot, name) {
+  const input = document.getElementById(`input-${slot}`);
+  const list = document.getElementById(`ac-list-${slot}`);
+  input.value = name;
+  list.classList.add('hidden');
+  if (name.trim().length > 0) loadDrug(slot, name.trim());
+}
+
+/* ===== SWAP DRUGS ===== */
+document.getElementById('swap-btn').addEventListener('click', () => {
+  const inputA = document.getElementById('input-a');
+  const inputB = document.getElementById('input-b');
+
+  // Swap display names in inputs
+  const tmpVal = inputA.value;
+  inputA.value = inputB.value;
+  inputB.value = tmpVal;
+
+  // Swap state
+  const tmpState = { ...state.a };
+  Object.assign(state.a, state.b);
+  Object.assign(state.b, tmpState);
+
+  // Swap panel names
+  document.getElementById('panel-a-name').textContent = state.a.displayName || '—';
+  document.getElementById('panel-b-name').textContent = state.b.displayName || '—';
+
+  checkSameDrugWarning();
+  destroyCharts('a');
+  destroyCharts('b');
+  renderAllPanels();
+});
+
+/* ===== DISCLAIMER TOGGLE ===== */
+document.getElementById('collapse-disclaimer-btn').addEventListener('click', () => {
+  document.getElementById('disclaimer-full').classList.add('hidden');
+  document.getElementById('disclaimer-bar').classList.remove('hidden');
+  state.disclaimerCollapsed = true;
+});
+
+document.getElementById('expand-disclaimer-btn').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('disclaimer-full').classList.remove('hidden');
+  document.getElementById('disclaimer-bar').classList.add('hidden');
+  state.disclaimerCollapsed = false;
+});
+
+document.getElementById('footer-disclaimer-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('disclaimer-full').classList.remove('hidden');
+  document.getElementById('disclaimer-bar').classList.add('hidden');
+  document.getElementById('disclaimer-full').scrollIntoView({ behavior: 'smooth' });
+});
+
+/* ===== ABOUT BUTTON ===== */
+document.getElementById('about-btn').addEventListener('click', () => openModal('about'));
+
+/* ===== MODALS ===== */
+const MODALS = {
+  'about': {
+    title: 'About Drug Safety Explorer',
+    body: `
+      <p>This tool helps you explore publicly available drug safety information from the U.S. Food and Drug Administration (FDA) through their OpenFDA API.</p>
+      <p>You can search for any FDA-regulated drug and compare adverse event reports, recalls, and labeling information side by side.</p>
+      <p><strong>Remember:</strong> More reports for a drug does not mean it's more dangerous. Widely used drugs naturally accumulate more reports. Always speak with a healthcare provider about your specific situation.</p>
+      <div class="modal-attribution">This product uses publicly available data from the U.S. Food and Drug Administration (FDA). FDA is not responsible for the product and does not endorse or recommend this or any other product.</div>`
+  },
+  'drug-names': {
+    title: 'Brand names vs. generic names',
+    body: `
+      <p>Most drugs have two names: a <strong>brand name</strong> (like Advil or Tylenol) chosen by the manufacturer, and a <strong>generic name</strong> (like ibuprofen or acetaminophen) based on the drug's active ingredient.</p>
+      <p>The FDA tracks safety data using both. If you search a brand name and get no results, try the generic name instead. Multiple brand names may share the same generic drug.</p>`
+  },
+  'report-counts': {
+    title: 'Why report counts vary',
+    body: `
+      <p>A high number of adverse event reports does <strong>not</strong> necessarily mean a drug is dangerous. Several factors influence how many reports exist:</p>
+      <ul>
+        <li><strong>How widely the drug is used:</strong> Common drugs like ibuprofen are taken by millions of people, so even a very low rate of problems generates many absolute reports.</li>
+        <li><strong>How long the drug has been on the market:</strong> Older drugs have had more time to accumulate reports.</li>
+        <li><strong>Media coverage:</strong> Publicity around a drug can trigger a surge in voluntary reporting.</li>
+        <li><strong>Mandatory vs. voluntary reporting:</strong> Healthcare professionals and manufacturers are required to report certain events; patients report voluntarily.</li>
+      </ul>
+      <p>Always compare report rates, not just raw counts.</p>`
+  },
+  'adverse-events': {
+    title: 'What adverse event data tells you (and what it doesn\'t)',
+    body: `
+      <p>The FDA's adverse event data comes from voluntary reports submitted by patients, caregivers, and healthcare professionals. This means:</p>
+      <ul>
+        <li><strong>Causation is not established:</strong> A reported event happened <em>around the same time</em> as drug use — it may or may not have been caused by the drug.</li>
+        <li><strong>Underreporting is common:</strong> Experts estimate that fewer than 10% of adverse events are ever reported.</li>
+        <li><strong>Severe events are over-represented:</strong> People are more likely to report serious or unusual outcomes.</li>
+      </ul>
+      <p>Use this data to identify patterns and ask informed questions — not to make medical decisions.</p>`
+  },
+  'outcomes': {
+    title: 'Understanding reported outcomes',
+    body: `
+      <p>When someone files an adverse event report, they may indicate the outcome. These categories are defined by FDA reporting requirements:</p>
+      <ul>
+        <li><strong>Fatal:</strong> The patient died; the drug may or may not have contributed.</li>
+        <li><strong>Recovering / Resolving:</strong> The patient was in the process of recovering at time of report.</li>
+        <li><strong>Recovered with Sequelae:</strong> The patient recovered but with lasting effects.</li>
+        <li><strong>Not Recovered / Ongoing:</strong> The condition had not resolved at the time of reporting.</li>
+        <li><strong>Recovered / Resolved:</strong> The patient fully recovered.</li>
+      </ul>
+      <p>Many reports lack outcome information, which is shown as "Unknown." Absence of a fatal outcome does not mean the event was minor.</p>`
+  },
+  'recalls': {
+    title: 'FDA Recall Classifications',
+    body: `
+      <p>The FDA classifies drug recalls into three categories based on the potential risk to consumers:</p>
+      <ul>
+        <li><strong>Class I — Most serious:</strong> Use of or exposure to the product is likely to cause serious adverse health consequences or death.</li>
+        <li><strong>Class II — Moderate risk:</strong> Use of or exposure to the product may cause temporary adverse health consequences or a remote probability of serious adverse health consequences.</li>
+        <li><strong>Class III — Low risk:</strong> Use of or exposure to the product is not likely to cause any adverse health consequences.</li>
+      </ul>
+      <p>A recall does not always mean a product is currently dangerous — many are issued for labeling errors, sterility concerns, or manufacturing deviations discovered during routine inspection.</p>`
+  },
+  'labeling': {
+    title: 'What is a drug label?',
+    body: `
+      <p>The FDA-approved drug label (also called "prescribing information" or "package insert") is the official document describing how a drug should be used. It's written for healthcare professionals, not necessarily for patients.</p>
+      <p>Key sections include:</p>
+      <ul>
+        <li><strong>Indications:</strong> What the drug is approved to treat.</li>
+        <li><strong>Warnings:</strong> Important safety concerns, including boxed warnings (the most serious).</li>
+        <li><strong>Contraindications:</strong> Conditions or situations where the drug should NOT be used.</li>
+        <li><strong>Adverse Reactions:</strong> Side effects observed in clinical trials and post-market surveillance.</li>
+      </ul>
+      <p>Label language can be technical. If something is unclear, ask a pharmacist or physician.</p>`
+  }
+};
+
+function openModal(key) {
+  const modal = MODALS[key];
+  if (!modal) return;
+
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-heading').textContent = modal.title;
+  document.getElementById('modal-body-content').innerHTML = modal.body;
+  overlay.classList.remove('hidden');
+
+  // Focus management
+  const closeBtn = document.getElementById('modal-close-btn');
+  closeBtn.focus();
+  trapFocus(document.getElementById('modal-box'));
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  releaseFocusTrap();
+}
+
+document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('modal-overlay').classList.contains('hidden')) {
+    closeModal();
+  }
+});
+
+/* ===== FOCUS TRAPPING ===== */
+let focusTrapHandler = null;
+function trapFocus(element) {
+  const focusable = element.querySelectorAll('a, button, [tabindex="0"], input, select, textarea');
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  focusTrapHandler = (e) => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  element.addEventListener('keydown', focusTrapHandler);
+}
+function releaseFocusTrap() {
+  const box = document.getElementById('modal-box');
+  if (focusTrapHandler) box.removeEventListener('keydown', focusTrapHandler);
+  focusTrapHandler = null;
+}
+
+/* ===== INITIALIZATION ===== */
+function init() {
+  setupAutocomplete('a');
+  setupAutocomplete('b');
+
+  // Show initial welcome state
+  renderWelcomeState('a');
+  renderWelcomeState('b');
+
+  // Pre-populate with default drugs
+  document.getElementById('input-a').value = 'Ibuprofen';
+  document.getElementById('input-b').value = 'Acetaminophen';
+
+  // Load both defaults
+  Promise.all([
+    loadDrug('a', 'Ibuprofen'),
+    loadDrug('b', 'Acetaminophen')
+  ]);
+}
+
+init();
+</script>
+</body>
+</html>
