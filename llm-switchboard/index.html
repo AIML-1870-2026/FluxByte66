@@ -867,6 +867,182 @@
     .json-badge.valid   { background: rgba(16,192,112,0.15); color: #10c070; border: 1px solid rgba(16,192,112,0.3); }
     .json-badge.invalid { background: rgba(204,0,0,0.12);    color: var(--accent-red-bright); border: 1px solid var(--accent-red-muted); }
 
+    /* ============================================================
+       PROMPT LIBRARY PANEL
+       ============================================================ */
+    #prompts-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+    }
+    #prompts-overlay.open { display: block; }
+
+    #prompts-panel {
+      position: fixed;
+      top: 0; left: -500px;
+      width: 480px;
+      height: 100vh;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 201;
+      transition: left 250ms ease;
+    }
+    #prompts-overlay.open #prompts-panel { left: 0; }
+
+    #prompts-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 10px;
+    }
+    #prompts-header h2 { font-size: 16px; font-weight: 600; flex: 1; }
+
+    #prompt-search {
+      flex: 1;
+      padding: 7px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    #prompt-search:focus { border-color: var(--border-accent); }
+    #prompt-search::placeholder { color: var(--text-muted); }
+
+    #prompts-categories {
+      display: flex;
+      gap: 6px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    #prompts-categories::-webkit-scrollbar { height: 3px; }
+
+    .cat-chip {
+      padding: 3px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 150ms ease;
+      flex-shrink: 0;
+    }
+    .cat-chip.active { background: var(--accent-red-muted); border-color: var(--accent-red); color: var(--accent-red-bright); }
+    .cat-chip:not(.active):hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    #prompts-body { flex: 1; overflow-y: auto; padding: 10px; }
+
+    .prompt-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 150ms ease;
+      position: relative;
+    }
+    .prompt-card:hover { border-color: var(--accent-red-muted); background: var(--bg-hover); }
+    .prompt-card.custom { border-color: rgba(102,0,204,0.35); }
+
+    .prompt-card-header { display: flex; align-items: center; gap: 8px; }
+    .prompt-card-title { font-size: 13px; font-weight: 600; flex: 1; }
+    .prompt-card-cat {
+      font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0;
+    }
+    .prompt-card-cat.coding    { background: rgba(80,160,255,0.15); color: #50a0ff; }
+    .prompt-card-cat.writing   { background: rgba(80,200,120,0.15); color: #50c878; }
+    .prompt-card-cat.analysis  { background: rgba(255,180,0,0.15);  color: #ffb400; }
+    .prompt-card-cat.data      { background: rgba(200,80,255,0.15); color: #c850ff; }
+    .prompt-card-cat.reasoning { background: rgba(255,100,80,0.15); color: #ff6450; }
+    .prompt-card-cat.custom    { background: rgba(102,0,204,0.15);  color: #a050ff; }
+
+    .prompt-card-preview {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .prompt-card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .prompt-use-btn {
+      padding: 4px 12px;
+      background: var(--accent-red);
+      border: none;
+      border-radius: 4px;
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 150ms ease;
+    }
+    .prompt-use-btn:hover { background: var(--accent-red-bright); }
+    .prompt-edit-btn, .prompt-del-btn {
+      padding: 4px 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      transition: all 150ms ease;
+    }
+    .prompt-edit-btn:hover { color: var(--text-primary); border-color: var(--border-accent); }
+    .prompt-del-btn:hover  { color: var(--accent-red-bright); border-color: var(--accent-red-muted); }
+
+    #prompts-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* Add/edit prompt form inside footer */
+    #add-prompt-form { display: none; flex-direction: column; gap: 8px; }
+    #add-prompt-form.visible { display: flex; }
+    .add-prompt-row { display: flex; gap: 8px; }
+    .add-prompt-input {
+      flex: 1; padding: 7px 10px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-primary); font-size: 12px; outline: none;
+      transition: border-color 150ms ease;
+    }
+    .add-prompt-input:focus { border-color: var(--border-accent); }
+    .add-prompt-textarea {
+      width: 100%; padding: 7px 10px; min-height: 72px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-primary); font-size: 12px;
+      resize: vertical; outline: none; transition: border-color 150ms ease;
+      font-family: inherit; line-height: 1.5;
+    }
+    .add-prompt-textarea:focus { border-color: var(--border-accent); }
+    .add-prompt-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+    @media (max-width: 767px) {
+      #prompts-panel { width: 100%; left: -100%; }
+    }
+
     /* Confirm dialog */
     .confirm-dialog {
       position: fixed; inset: 0;
@@ -983,6 +1159,7 @@
           <textarea id="message-input" placeholder="Message the model…" rows="1"></textarea>
           <div class="input-actions">
             <button class="attach-btn" title="Coming soon" disabled>📎</button>
+            <button class="btn-icon" id="prompts-btn" title="Prompt library" style="font-size:14px;">☰✦</button>
             <button id="send-btn" disabled title="Send (Enter)">➤</button>
             <button id="stop-btn" title="Stop generation">⏹</button>
           </div>
@@ -1093,6 +1270,48 @@
   </div>
 </div>
 
+<!-- ===== PROMPT LIBRARY PANEL ===== -->
+<div id="prompts-overlay">
+  <div id="prompts-panel">
+    <div id="prompts-header">
+      <h2>⚡ Prompt Library</h2>
+      <input id="prompt-search" type="text" placeholder="Search prompts…">
+      <button class="btn-icon" id="close-prompts-btn">✕</button>
+    </div>
+    <div id="prompts-categories">
+      <button class="cat-chip active" data-cat="all">All</button>
+      <button class="cat-chip" data-cat="coding">Coding</button>
+      <button class="cat-chip" data-cat="writing">Writing</button>
+      <button class="cat-chip" data-cat="analysis">Analysis</button>
+      <button class="cat-chip" data-cat="data">Data</button>
+      <button class="cat-chip" data-cat="reasoning">Reasoning</button>
+      <button class="cat-chip" data-cat="custom">My Prompts</button>
+    </div>
+    <div id="prompts-body"></div>
+    <div id="prompts-footer">
+      <button class="btn btn-ghost" id="add-prompt-toggle-btn" style="width:100%;justify-content:center;">+ Save current input as prompt</button>
+      <div id="add-prompt-form">
+        <div class="add-prompt-row">
+          <input class="add-prompt-input" id="new-prompt-title" placeholder="Prompt title…">
+          <select class="add-prompt-input" id="new-prompt-cat" style="flex:0 0 120px;">
+            <option value="coding">Coding</option>
+            <option value="writing">Writing</option>
+            <option value="analysis">Analysis</option>
+            <option value="data">Data</option>
+            <option value="reasoning">Reasoning</option>
+            <option value="custom" selected>Custom</option>
+          </select>
+        </div>
+        <textarea class="add-prompt-textarea" id="new-prompt-text" placeholder="Prompt text…"></textarea>
+        <div class="add-prompt-actions">
+          <button class="btn btn-ghost" id="cancel-add-prompt-btn">Cancel</button>
+          <button class="btn btn-primary" id="save-prompt-btn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== JAVASCRIPT ===== -->
 <script>
 'use strict';
@@ -1130,6 +1349,37 @@ const SCHEMA_TEMPLATES = {
 };
 
 // ============================================================
+// BUILT-IN PROMPTS
+// ============================================================
+const BUILTIN_PROMPTS = [
+  // Coding
+  { id: 'bp1', cat: 'coding', title: 'Explain this code', text: 'Explain the following code step by step, including what it does, how it works, and any potential issues:\n\n```\n[paste code here]\n```' },
+  { id: 'bp2', cat: 'coding', title: 'Debug & fix', text: 'The following code has a bug. Identify the problem, explain why it occurs, and provide a corrected version:\n\n```\n[paste code here]\n```\n\nError message: [paste error]' },
+  { id: 'bp3', cat: 'coding', title: 'Write unit tests', text: 'Write comprehensive unit tests for the following function. Cover happy paths, edge cases, and error conditions:\n\n```\n[paste function here]\n```' },
+  { id: 'bp4', cat: 'coding', title: 'Refactor for readability', text: 'Refactor the following code to improve readability and maintainability without changing its behavior. Explain each change:\n\n```\n[paste code here]\n```' },
+  { id: 'bp5', cat: 'coding', title: 'Convert to another language', text: 'Convert the following code from [source language] to [target language], maintaining the same logic and structure:\n\n```\n[paste code here]\n```' },
+  // Writing
+  { id: 'bp6', cat: 'writing', title: 'Improve this writing', text: 'Improve the following text for clarity, flow, and impact. Maintain the original tone and meaning:\n\n[paste text here]' },
+  { id: 'bp7', cat: 'writing', title: 'Summarize in bullet points', text: 'Summarize the following content as concise bullet points, grouped by theme:\n\n[paste content here]' },
+  { id: 'bp8', cat: 'writing', title: 'Write a professional email', text: 'Write a professional email for the following situation:\n\nContext: [describe the situation]\nTone: [formal/friendly/assertive]\nKey points to include: [list them]' },
+  { id: 'bp9', cat: 'writing', title: 'ELI5 — explain simply', text: 'Explain the following concept as if I\'m a complete beginner with no technical background. Use simple analogies and everyday language:\n\n[concept or topic]' },
+  // Analysis
+  { id: 'bp10', cat: 'analysis', title: 'Pros and cons', text: 'Provide a balanced analysis of the pros and cons of the following, considering different perspectives:\n\n[topic or decision]' },
+  { id: 'bp11', cat: 'analysis', title: 'SWOT analysis', text: 'Perform a SWOT analysis (Strengths, Weaknesses, Opportunities, Threats) for:\n\n[subject]' },
+  { id: 'bp12', cat: 'analysis', title: 'Compare and contrast', text: 'Compare and contrast the following two options across these dimensions: [list dimensions]. Conclude with a recommendation:\n\nOption A: [describe]\nOption B: [describe]' },
+  { id: 'bp13', cat: 'analysis', title: 'Root cause analysis', text: 'Perform a root cause analysis of the following problem. Use the 5 Whys technique and suggest actionable solutions:\n\nProblem: [describe the issue]' },
+  // Data
+  { id: 'bp14', cat: 'data', title: 'Extract structured data', text: 'Extract all structured information from the following text and return it as a clean JSON object with appropriate field names:\n\n[paste text here]' },
+  { id: 'bp15', cat: 'data', title: 'Clean & normalize data', text: 'Clean and normalize the following data. Fix inconsistencies, standardize formats, and flag any anomalies:\n\n[paste data here]' },
+  { id: 'bp16', cat: 'data', title: 'Write a SQL query', text: 'Write a SQL query to achieve the following:\n\nGoal: [describe what you want]\nTable schema:\n```\n[paste schema here]\n```' },
+  { id: 'bp17', cat: 'data', title: 'Analyze CSV data', text: 'Analyze the following CSV data. Identify patterns, outliers, and key statistics. Suggest visualizations that would be useful:\n\n```\n[paste CSV here]\n```' },
+  // Reasoning
+  { id: 'bp18', cat: 'reasoning', title: 'Step-by-step reasoning', text: 'Solve the following problem by thinking through it step by step. Show all your reasoning before giving a final answer:\n\n[problem or question]' },
+  { id: 'bp19', cat: 'reasoning', title: 'Devil\'s advocate', text: 'Play devil\'s advocate for the following position. Give the strongest possible arguments against it, even if you agree with it:\n\n[position or claim]' },
+  { id: 'bp20', cat: 'reasoning', title: 'Decision framework', text: 'Help me make a decision using a structured framework. Consider short-term and long-term implications:\n\nDecision: [what you need to decide]\nContext: [relevant background]\nConstraints: [any limitations]' },
+];
+
+// ============================================================
 // STATE
 // ============================================================
 const state = {
@@ -1139,6 +1389,8 @@ const state = {
   selectedProvider: 'openai',
   outputMode: 'text',   // 'text' | 'json'
   activeSchema: '',
+  customPrompts: [],
+  promptFilter: { cat: 'all', search: '' },
   settings: {
     openaiKey: '',
     anthropicKey: '',
@@ -1186,6 +1438,17 @@ function saveSettings() {
 function saveModel() {
   localStorage.setItem('llmsw_model', state.selectedModel);
   localStorage.setItem('llmsw_provider', state.selectedProvider);
+}
+
+function loadCustomPrompts() {
+  try {
+    const p = JSON.parse(localStorage.getItem('llmsw_custom_prompts') || '[]');
+    state.customPrompts = Array.isArray(p) ? p : [];
+  } catch { state.customPrompts = []; }
+}
+
+function saveCustomPrompts() {
+  localStorage.setItem('llmsw_custom_prompts', JSON.stringify(state.customPrompts));
 }
 
 // ============================================================
@@ -1935,10 +2198,131 @@ function closeMobileSidebar() {
 }
 
 // ============================================================
+// PROMPT LIBRARY
+// ============================================================
+function openPrompts() {
+  document.getElementById('prompts-overlay').classList.add('open');
+  renderPromptLibrary();
+}
+
+function closePrompts() {
+  document.getElementById('prompts-overlay').classList.remove('open');
+}
+
+function allPrompts() {
+  return [
+    ...BUILTIN_PROMPTS,
+    ...state.customPrompts.map(p => ({ ...p, cat: p.cat || 'custom' })),
+  ];
+}
+
+function renderPromptLibrary() {
+  const { cat, search } = state.promptFilter;
+  const body = document.getElementById('prompts-body');
+  const q = search.toLowerCase();
+
+  const filtered = allPrompts().filter(p => {
+    const catMatch  = cat === 'all' || p.cat === cat;
+    const textMatch = !q || p.title.toLowerCase().includes(q) || p.text.toLowerCase().includes(q);
+    return catMatch && textMatch;
+  });
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);font-size:13px;">No prompts found.</div>`;
+    return;
+  }
+
+  body.innerHTML = '';
+  filtered.forEach(p => {
+    const isCustom = state.customPrompts.some(cp => cp.id === p.id);
+    const card = document.createElement('div');
+    card.className = 'prompt-card' + (isCustom ? ' custom' : '');
+    card.innerHTML = `
+      <div class="prompt-card-header">
+        <span class="prompt-card-title">${escapeHtml(p.title)}</span>
+        <span class="prompt-card-cat ${p.cat}">${p.cat}</span>
+      </div>
+      <div class="prompt-card-preview">${escapeHtml(p.text)}</div>
+      <div class="prompt-card-actions">
+        <button class="prompt-use-btn">Use ➤</button>
+        ${isCustom ? `<button class="prompt-edit-btn" data-id="${p.id}">Edit</button><button class="prompt-del-btn" data-id="${p.id}">Delete</button>` : ''}
+      </div>`;
+
+    card.querySelector('.prompt-use-btn').addEventListener('click', () => {
+      const inp = document.getElementById('message-input');
+      inp.value = p.text;
+      inp.dispatchEvent(new Event('input'));
+      inp.focus();
+      closePrompts();
+    });
+
+    if (isCustom) {
+      card.querySelector('.prompt-del-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        state.customPrompts = state.customPrompts.filter(cp => cp.id !== p.id);
+        saveCustomPrompts();
+        renderPromptLibrary();
+      });
+      card.querySelector('.prompt-edit-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        openAddPromptForm(p);
+      });
+    }
+
+    body.appendChild(card);
+  });
+}
+
+let editingPromptId = null;
+
+function openAddPromptForm(existing) {
+  editingPromptId = existing ? existing.id : null;
+  document.getElementById('add-prompt-form').classList.add('visible');
+  document.getElementById('add-prompt-toggle-btn').style.display = 'none';
+  if (existing) {
+    document.getElementById('new-prompt-title').value = existing.title;
+    document.getElementById('new-prompt-text').value  = existing.text;
+    document.getElementById('new-prompt-cat').value   = existing.cat || 'custom';
+  } else {
+    // Pre-fill from current input if available
+    const currentInput = document.getElementById('message-input').value.trim();
+    document.getElementById('new-prompt-title').value = '';
+    document.getElementById('new-prompt-text').value  = currentInput;
+    document.getElementById('new-prompt-cat').value   = 'custom';
+  }
+}
+
+function closeAddPromptForm() {
+  editingPromptId = null;
+  document.getElementById('add-prompt-form').classList.remove('visible');
+  document.getElementById('add-prompt-toggle-btn').style.display = '';
+  document.getElementById('new-prompt-title').value = '';
+  document.getElementById('new-prompt-text').value  = '';
+}
+
+function savePrompt() {
+  const title = document.getElementById('new-prompt-title').value.trim();
+  const text  = document.getElementById('new-prompt-text').value.trim();
+  const cat   = document.getElementById('new-prompt-cat').value;
+  if (!title || !text) return;
+
+  if (editingPromptId) {
+    const idx = state.customPrompts.findIndex(p => p.id === editingPromptId);
+    if (idx !== -1) state.customPrompts[idx] = { ...state.customPrompts[idx], title, text, cat };
+  } else {
+    state.customPrompts.push({ id: uid(), title, text, cat });
+  }
+  saveCustomPrompts();
+  closeAddPromptForm();
+  renderPromptLibrary();
+}
+
+// ============================================================
 // INIT
 // ============================================================
 function init() {
   loadState();
+  loadCustomPrompts();
   applyFontSize(state.settings.fontSize);
   updateModelSelectorUI();
 
@@ -2072,6 +2456,31 @@ function init() {
       input.focus();
     });
   });
+
+  // ----- PROMPT LIBRARY -----
+  document.getElementById('prompts-btn').addEventListener('click', openPrompts);
+  document.getElementById('close-prompts-btn').addEventListener('click', closePrompts);
+  document.getElementById('prompts-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('prompts-overlay')) closePrompts();
+  });
+
+  document.getElementById('prompt-search').addEventListener('input', e => {
+    state.promptFilter.search = e.target.value;
+    renderPromptLibrary();
+  });
+
+  document.querySelectorAll('.cat-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.promptFilter.cat = chip.dataset.cat;
+      renderPromptLibrary();
+    });
+  });
+
+  document.getElementById('add-prompt-toggle-btn').addEventListener('click', () => openAddPromptForm(null));
+  document.getElementById('cancel-add-prompt-btn').addEventListener('click', closeAddPromptForm);
+  document.getElementById('save-prompt-btn').addEventListener('click', savePrompt);
 
   // ----- SETTINGS -----
   document.getElementById('settings-btn').addEventListener('click', openSettings);
