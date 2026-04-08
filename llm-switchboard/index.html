@@ -1043,6 +1043,201 @@
       #prompts-panel { width: 100%; left: -100%; }
     }
 
+    /* ============================================================
+       COMPARE MODE
+       ============================================================ */
+    /* Compare button active state */
+    #compare-btn.compare-active {
+      background: var(--accent-red-muted);
+      border-color: var(--accent-red);
+      color: var(--accent-red-bright);
+    }
+
+    /* Compare layout replaces #main when active */
+    #compare-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #compare-view.active { display: flex; }
+    #main.compare-hidden { display: none; }
+
+    #compare-header {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg-surface);
+    }
+
+    .compare-col-header {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-right: 1px solid var(--border);
+      min-width: 0;
+    }
+    .compare-col-header:last-child { border-right: none; }
+    .compare-col-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); flex-shrink: 0; }
+
+    .compare-model-select {
+      flex: 1;
+      padding: 5px 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .compare-model-select:focus { border-color: var(--border-accent); }
+
+    #compare-panels {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .compare-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+      min-width: 0;
+    }
+    .compare-panel:last-child { border-right: none; }
+
+    .compare-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Metrics bar under each compare response */
+    .compare-metrics {
+      display: flex;
+      gap: 12px;
+      padding: 8px 20px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 70px;
+    }
+    .metric-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .metric-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .metric-value.winner { color: #10c070; }
+    .metric-value.loser  { color: var(--accent-red-bright); }
+
+    .compare-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .compare-typing {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: var(--bg-surface);
+      border-left: 3px solid var(--accent-red-muted);
+      border-radius: 2px 8px 8px 2px;
+      align-self: flex-start;
+    }
+    .compare-typing.visible { display: flex; }
+
+    /* Compare input bar */
+    #compare-input-bar {
+      padding: 10px 20px 14px;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #compare-input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      transition: border-color 150ms ease;
+    }
+    #compare-input-wrapper:focus-within { border-color: var(--border-accent); }
+    #compare-message-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: var(--font-size);
+      resize: none;
+      line-height: 1.6;
+      max-height: 160px;
+      min-height: 24px;
+      overflow-y: auto;
+      font-family: inherit;
+    }
+    #compare-message-input::placeholder { color: var(--text-muted); }
+
+    #compare-send-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px; border: none;
+      background: var(--accent-red); color: white;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 150ms ease; flex-shrink: 0;
+    }
+    #compare-send-btn:hover:not(:disabled) { background: var(--accent-red-bright); }
+    #compare-send-btn:disabled { background: var(--bg-hover); color: var(--text-muted); cursor: not-allowed; }
+    #compare-stop-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px; border: none;
+      background: var(--accent-red-muted); color: var(--accent-red-bright);
+      font-size: 15px; display: none;
+      align-items: center; justify-content: center;
+      transition: all 150ms ease; flex-shrink: 0;
+    }
+    #compare-stop-btn:hover { background: var(--accent-red); color: white; }
+    #compare-meta { display: flex; justify-content: flex-end; margin-top: 5px; font-size: 11px; color: var(--text-muted); }
+
+    @media (max-width: 767px) {
+      #compare-panels { flex-direction: column; }
+      .compare-panel { border-right: none; border-bottom: 1px solid var(--border); min-height: 40vh; }
+      .compare-panel:last-child { border-bottom: none; }
+    }
+
     /* Confirm dialog */
     .confirm-dialog {
       position: fixed; inset: 0;
@@ -1094,6 +1289,7 @@
     </div>
 
     <div id="header-right">
+      <button class="btn btn-ghost" id="compare-btn" title="Side-by-side model comparison">⇔ Compare</button>
       <button class="btn btn-ghost" id="new-chat-btn">+ New</button>
       <button class="btn-icon" id="settings-btn" title="Settings">⚙</button>
     </div>
@@ -1169,6 +1365,94 @@
     </div>
 
   </div><!-- /main -->
+
+  <!-- ===== COMPARE VIEW ===== -->
+  <div id="compare-view">
+    <div id="compare-header">
+      <div class="compare-col-header">
+        <span class="compare-col-label">Model A</span>
+        <select class="compare-model-select" id="compare-model-a">
+          <optgroup label="OpenAI">
+            <option value="gpt-5|openai">GPT-5</option>
+            <option value="gpt-5-mini|openai">GPT-5 mini</option>
+            <option value="gpt-4o|openai" selected>GPT-4o</option>
+            <option value="gpt-4o-mini|openai">GPT-4o mini</option>
+          </optgroup>
+          <optgroup label="Anthropic">
+            <option value="claude-opus-4-1|anthropic">Claude Opus 4.1</option>
+            <option value="claude-sonnet-4-0|anthropic">Claude Sonnet 4</option>
+            <option value="claude-3-5-sonnet-20241022|anthropic">Claude 3.5 Sonnet</option>
+            <option value="claude-3-5-haiku-20241022|anthropic">Claude 3.5 Haiku</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="compare-col-header">
+        <span class="compare-col-label">Model B</span>
+        <select class="compare-model-select" id="compare-model-b">
+          <optgroup label="OpenAI">
+            <option value="gpt-5|openai">GPT-5</option>
+            <option value="gpt-5-mini|openai">GPT-5 mini</option>
+            <option value="gpt-4o|openai">GPT-4o</option>
+            <option value="gpt-4o-mini|openai">GPT-4o mini</option>
+          </optgroup>
+          <optgroup label="Anthropic">
+            <option value="claude-opus-4-1|anthropic">Claude Opus 4.1</option>
+            <option value="claude-sonnet-4-0|anthropic">Claude Sonnet 4</option>
+            <option value="claude-3-5-sonnet-20241022|anthropic" selected>Claude 3.5 Sonnet</option>
+            <option value="claude-3-5-haiku-20241022|anthropic">Claude 3.5 Haiku</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+
+    <div id="compare-panels">
+      <!-- Panel A -->
+      <div class="compare-panel" id="compare-panel-a">
+        <div class="compare-messages" id="compare-messages-a">
+          <div class="compare-status" id="compare-status-a">
+            <span style="font-size:28px;color:var(--accent-red)">⇔</span>
+            <span>Send a prompt below to compare responses</span>
+          </div>
+        </div>
+        <div class="compare-metrics" id="compare-metrics-a" style="display:none">
+          <div class="metric-item"><div class="metric-label">Time to first token</div><div class="metric-value" id="cm-a-ttft">—</div></div>
+          <div class="metric-item"><div class="metric-label">Total time</div><div class="metric-value" id="cm-a-total">—</div></div>
+          <div class="metric-item"><div class="metric-label">Est. tokens</div><div class="metric-value" id="cm-a-tokens">—</div></div>
+          <div class="metric-item"><div class="metric-label">Tokens / sec</div><div class="metric-value" id="cm-a-tps">—</div></div>
+          <div class="metric-item"><div class="metric-label">Chars</div><div class="metric-value" id="cm-a-chars">—</div></div>
+        </div>
+      </div>
+
+      <!-- Panel B -->
+      <div class="compare-panel" id="compare-panel-b">
+        <div class="compare-messages" id="compare-messages-b">
+          <div class="compare-status" id="compare-status-b">
+            <span style="font-size:28px;color:var(--accent-red)">⇔</span>
+            <span>Send a prompt below to compare responses</span>
+          </div>
+        </div>
+        <div class="compare-metrics" id="compare-metrics-b" style="display:none">
+          <div class="metric-item"><div class="metric-label">Time to first token</div><div class="metric-value" id="cm-b-ttft">—</div></div>
+          <div class="metric-item"><div class="metric-label">Total time</div><div class="metric-value" id="cm-b-total">—</div></div>
+          <div class="metric-item"><div class="metric-label">Est. tokens</div><div class="metric-value" id="cm-b-tokens">—</div></div>
+          <div class="metric-item"><div class="metric-label">Tokens / sec</div><div class="metric-value" id="cm-b-tps">—</div></div>
+          <div class="metric-item"><div class="metric-label">Chars</div><div class="metric-value" id="cm-b-chars">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="compare-input-bar">
+      <div id="compare-input-wrapper">
+        <textarea id="compare-message-input" placeholder="Send same prompt to both models…" rows="1"></textarea>
+        <div class="input-actions">
+          <button id="compare-send-btn" disabled>➤</button>
+          <button id="compare-stop-btn">⏹</button>
+        </div>
+      </div>
+      <div id="compare-meta"><span id="compare-char-counter">0 tokens est.</span></div>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <!-- ===== SETTINGS PANEL ===== -->
@@ -2318,6 +2602,237 @@ function savePrompt() {
 }
 
 // ============================================================
+// COMPARE MODE
+// ============================================================
+const compareState = {
+  active: false,
+  isLoading: false,
+  abortA: null,
+  abortB: null,
+};
+
+function toggleCompare() {
+  compareState.active = !compareState.active;
+  document.getElementById('compare-view').classList.toggle('active', compareState.active);
+  document.getElementById('main').classList.toggle('compare-hidden', compareState.active);
+  document.getElementById('compare-btn').classList.toggle('compare-active', compareState.active);
+}
+
+function getCompareModel(side) {
+  const val = document.getElementById(`compare-model-${side}`).value;
+  const [model, provider] = val.split('|');
+  return { model, provider };
+}
+
+function buildCompareRequest(prompt, model, provider, stream) {
+  const apiKey = provider === 'openai' ? state.settings.openaiKey : state.settings.anthropicKey;
+  if (!apiKey) throw new Error(`No ${provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key. Open ⚙ Settings.`);
+
+  const messages = [];
+  if (state.settings.systemPrompt) messages.push({ role: 'system', content: state.settings.systemPrompt });
+  messages.push({ role: 'user', content: prompt });
+
+  if (provider === 'openai') {
+    return {
+      url: 'https://api.openai.com/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model, messages,
+        temperature: state.settings.temperature,
+        max_tokens: state.settings.maxTokens,
+        top_p: state.settings.topP,
+        stream,
+      }),
+    };
+  } else {
+    const sysMsg = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+    const userMsgs = messages.filter(m => m.role !== 'system');
+    return {
+      url: 'https://api.anthropic.com/v1/messages',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model,
+        ...(sysMsg ? { system: sysMsg } : {}),
+        messages: userMsgs,
+        max_tokens: state.settings.maxTokens,
+        temperature: state.settings.temperature,
+        top_p: state.settings.topP,
+        stream,
+      }),
+    };
+  }
+}
+
+function appendCompareUserMsg(side, text) {
+  const container = document.getElementById(`compare-messages-${side}`);
+  document.getElementById(`compare-status-${side}`)?.remove();
+  const el = document.createElement('div');
+  el.className = 'message user';
+  el.innerHTML = `
+    <div class="message-header"><span class="message-role">you</span></div>
+    <div class="message-body"><p>${escapeHtml(text).replace(/\n/g, '<br>')}</p></div>`;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendCompareAssistantEl(side) {
+  const container = document.getElementById(`compare-messages-${side}`);
+  const el = document.createElement('div');
+  el.className = 'message assistant';
+  el.innerHTML = `
+    <div class="message-header"><span class="message-role">assistant</span></div>
+    <div class="message-body"><span class="streaming-cursor"></span></div>`;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el.querySelector('.message-body');
+}
+
+function appendCompareError(side, msg) {
+  const container = document.getElementById(`compare-messages-${side}`);
+  const el = document.createElement('div');
+  el.className = 'message error';
+  el.innerHTML = `<div class="message-body"><div class="error-title">⚠ Error</div><div>${escapeHtml(msg)}</div></div>`;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function updateMetrics(side, metrics, otherMetrics) {
+  document.getElementById(`compare-metrics-${side}`).style.display = 'flex';
+
+  const fmt = (ms) => ms < 1000 ? `${ms}ms` : `${(ms/1000).toFixed(2)}s`;
+  const tps = metrics.totalMs > 0 ? (metrics.tokens / (metrics.totalMs / 1000)).toFixed(1) : '—';
+
+  // Determine winners per metric (lower time = better, higher tps = better)
+  const setEl = (id, val, cls) => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = val; if (cls) el.className = `metric-value ${cls}`; }
+  };
+
+  const ttftWinner = otherMetrics && metrics.ttftMs < otherMetrics.ttftMs ? 'winner' : otherMetrics && metrics.ttftMs > otherMetrics.ttftMs ? 'loser' : '';
+  const totalWinner = otherMetrics && metrics.totalMs < otherMetrics.totalMs ? 'winner' : otherMetrics && metrics.totalMs > otherMetrics.totalMs ? 'loser' : '';
+  const tpsWinner = otherMetrics && parseFloat(tps) > parseFloat(otherMetrics.tps || 0) ? 'winner' : otherMetrics && parseFloat(tps) < parseFloat(otherMetrics.tps || 0) ? 'loser' : '';
+
+  setEl(`cm-${side}-ttft`,   metrics.ttftMs != null ? fmt(metrics.ttftMs) : '—', ttftWinner);
+  setEl(`cm-${side}-total`,  metrics.totalMs != null ? fmt(metrics.totalMs) : '—', totalWinner);
+  setEl(`cm-${side}-tokens`, metrics.tokens != null ? `~${metrics.tokens}` : '—');
+  setEl(`cm-${side}-tps`,    tps, tpsWinner);
+  setEl(`cm-${side}-chars`,  metrics.chars != null ? metrics.chars.toLocaleString() : '—');
+}
+
+async function streamCompare(side, prompt) {
+  const { model, provider } = getCompareModel(side);
+  const bodyEl = appendCompareAssistantEl(side);
+  const metrics = { ttftMs: null, totalMs: null, tokens: 0, chars: 0, tps: '—' };
+  const t0 = Date.now();
+  let content = '';
+
+  const abort = new AbortController();
+  if (side === 'a') compareState.abortA = abort;
+  else compareState.abortB = abort;
+
+  try {
+    const { url, headers, body } = buildCompareRequest(prompt, model, provider, true);
+    const resp = await fetch(url, { method: 'POST', headers, body, signal: abort.signal });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(apiErrorMessage(resp.status, errText));
+    }
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        const chunk = parseSseLine(line, provider);
+        if (chunk === null) break;
+        if (chunk) {
+          if (metrics.ttftMs == null) metrics.ttftMs = Date.now() - t0;
+          content += chunk;
+          metrics.tokens = estimateTokens(content);
+          metrics.chars  = content.length;
+          bodyEl.innerHTML = renderMarkdown(content) + '<span class="streaming-cursor"></span>';
+          applyHighlight(bodyEl);
+          document.getElementById(`compare-messages-${side}`).scrollTop = 9999;
+        }
+      }
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      bodyEl.remove();
+      appendCompareError(side, e.message);
+    } else if (content) {
+      bodyEl.innerHTML = renderMarkdown(content) + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
+      applyHighlight(bodyEl);
+    } else {
+      bodyEl.closest('.message')?.remove();
+    }
+    metrics.totalMs = Date.now() - t0;
+    return metrics;
+  }
+
+  metrics.totalMs = Date.now() - t0;
+  metrics.tps     = metrics.totalMs > 0 ? (metrics.tokens / (metrics.totalMs / 1000)).toFixed(1) : '—';
+  bodyEl.innerHTML = renderMarkdown(content) + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
+  applyHighlight(bodyEl);
+  document.getElementById(`compare-messages-${side}`).scrollTop = 9999;
+  return metrics;
+}
+
+async function runCompare(prompt) {
+  if (!prompt.trim() || compareState.isLoading) return;
+  compareState.isLoading = true;
+
+  const sendBtn = document.getElementById('compare-send-btn');
+  const stopBtn = document.getElementById('compare-stop-btn');
+  sendBtn.style.display = 'none';
+  stopBtn.style.display = 'flex';
+  document.getElementById('compare-message-input').disabled = true;
+
+  // Reset metrics display
+  ['a', 'b'].forEach(s => {
+    document.getElementById(`compare-metrics-${s}`).style.display = 'none';
+    ['ttft','total','tokens','tps','chars'].forEach(m => {
+      const el = document.getElementById(`cm-${s}-${m}`);
+      if (el) { el.textContent = '—'; el.className = 'metric-value'; }
+    });
+  });
+
+  appendCompareUserMsg('a', prompt);
+  appendCompareUserMsg('b', prompt);
+
+  // Run both in parallel, collect metrics
+  const [metricsA, metricsB] = await Promise.all([
+    streamCompare('a', prompt),
+    streamCompare('b', prompt),
+  ]);
+
+  // Highlight winners now that both are done
+  if (metricsA && metricsB) {
+    updateMetrics('a', metricsA, metricsB);
+    updateMetrics('b', metricsB, metricsA);
+  }
+
+  compareState.isLoading = false;
+  sendBtn.style.display = 'flex';
+  stopBtn.style.display = 'none';
+  document.getElementById('compare-message-input').disabled = false;
+  document.getElementById('compare-message-input').focus();
+}
+
+// ============================================================
 // INIT
 // ============================================================
 function init() {
@@ -2456,6 +2971,44 @@ function init() {
       input.focus();
     });
   });
+
+  // ----- COMPARE MODE -----
+  document.getElementById('compare-btn').addEventListener('click', toggleCompare);
+
+  const cmpInput   = document.getElementById('compare-message-input');
+  const cmpSendBtn = document.getElementById('compare-send-btn');
+  const cmpStopBtn = document.getElementById('compare-stop-btn');
+
+  cmpInput.addEventListener('input', () => {
+    cmpInput.style.height = 'auto';
+    cmpInput.style.height = Math.min(cmpInput.scrollHeight, 160) + 'px';
+    cmpSendBtn.disabled = !cmpInput.value.trim() || compareState.isLoading;
+    const est = estimateTokens(cmpInput.value);
+    document.getElementById('compare-char-counter').textContent = `~${est} token${est !== 1 ? 's' : ''} est.`;
+  });
+
+  cmpInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!cmpSendBtn.disabled) doCompareSend();
+    }
+  });
+
+  cmpSendBtn.addEventListener('click', doCompareSend);
+  cmpStopBtn.addEventListener('click', () => {
+    compareState.abortA?.abort();
+    compareState.abortB?.abort();
+  });
+
+  function doCompareSend() {
+    const text = cmpInput.value.trim();
+    if (!text || compareState.isLoading) return;
+    cmpInput.value = '';
+    cmpInput.style.height = 'auto';
+    cmpSendBtn.disabled = true;
+    document.getElementById('compare-char-counter').textContent = '0 tokens est.';
+    runCompare(text);
+  }
 
   // ----- PROMPT LIBRARY -----
   document.getElementById('prompts-btn').addEventListener('click', openPrompts);
