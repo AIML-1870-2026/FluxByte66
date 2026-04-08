@@ -768,6 +768,105 @@
       .message { max-width: 95%; }
     }
 
+    /* ============================================================
+       OUTPUT MODE TOGGLE + SCHEMA PANEL
+       ============================================================ */
+    #output-mode-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 28px 0;
+      flex-shrink: 0;
+    }
+    .mode-tab {
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 150ms ease;
+      cursor: pointer;
+    }
+    .mode-tab.active {
+      background: var(--accent-red-muted);
+      border-color: var(--accent-red);
+      color: var(--accent-red-bright);
+    }
+    .mode-tab:not(.active):hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    #schema-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 28px 0;
+      flex-shrink: 0;
+    }
+    #schema-panel.visible { display: flex; }
+
+    #schema-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #schema-template-select {
+      flex: 1;
+      padding: 6px 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+    #schema-template-select:focus { border-color: var(--border-accent); }
+
+    #schema-editor {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 72px;
+      max-height: 160px;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+    #schema-editor:focus { border-color: var(--border-accent); }
+    #schema-editor.invalid { border-color: var(--accent-red-bright); }
+    #schema-editor.valid   { border-color: #10c070; }
+
+    #schema-validation-msg {
+      font-size: 11px;
+      min-height: 14px;
+      margin-top: -4px;
+    }
+    #schema-validation-msg.ok   { color: #10c070; }
+    #schema-validation-msg.fail { color: var(--accent-red-bright); }
+
+    /* JSON badge on assistant messages */
+    .json-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .json-badge.valid   { background: rgba(16,192,112,0.15); color: #10c070; border: 1px solid rgba(16,192,112,0.3); }
+    .json-badge.invalid { background: rgba(204,0,0,0.12);    color: var(--accent-red-bright); border: 1px solid var(--accent-red-muted); }
+
     /* Confirm dialog */
     .confirm-dialog {
       position: fixed; inset: 0;
@@ -854,6 +953,29 @@
           <div class="typing-dot"></div>
           <div class="typing-dot"></div>
         </div>
+      </div>
+
+      <!-- Output mode toggle -->
+      <div id="output-mode-bar">
+        <button class="mode-tab active" data-mode="text">✦ Free Text</button>
+        <button class="mode-tab" data-mode="json">{ } JSON Schema</button>
+      </div>
+
+      <!-- Schema panel (JSON mode only) -->
+      <div id="schema-panel">
+        <div id="schema-panel-header">
+          <select id="schema-template-select">
+            <option value="">— Load a template —</option>
+            <option value="blank">Blank schema</option>
+            <option value="person">Person</option>
+            <option value="product">Product</option>
+            <option value="api_response">API Response</option>
+            <option value="sentiment">Sentiment Analysis</option>
+            <option value="extraction">Entity Extraction</option>
+          </select>
+        </div>
+        <textarea id="schema-editor" placeholder='Paste or type a JSON schema here, e.g. {"type":"object","properties":{"name":{"type":"string"}}}'></textarea>
+        <div id="schema-validation-msg"></div>
       </div>
 
       <div id="input-bar">
@@ -996,6 +1118,18 @@ const MODELS = {
 const PROVIDER_LABELS = { openai: 'OpenAI', anthropic: 'Anthropic' };
 
 // ============================================================
+// SCHEMA TEMPLATES
+// ============================================================
+const SCHEMA_TEMPLATES = {
+  blank: `{\n  "type": "object",\n  "properties": {}\n}`,
+  person: `{\n  "type": "object",\n  "properties": {\n    "name": { "type": "string" },\n    "age": { "type": "integer" },\n    "email": { "type": "string", "format": "email" },\n    "occupation": { "type": "string" }\n  },\n  "required": ["name"]\n}`,
+  product: `{\n  "type": "object",\n  "properties": {\n    "id": { "type": "string" },\n    "name": { "type": "string" },\n    "price": { "type": "number" },\n    "currency": { "type": "string", "enum": ["USD","EUR","GBP"] },\n    "in_stock": { "type": "boolean" },\n    "tags": { "type": "array", "items": { "type": "string" } }\n  },\n  "required": ["name","price"]\n}`,
+  api_response: `{\n  "type": "object",\n  "properties": {\n    "status": { "type": "string", "enum": ["success","error"] },\n    "code": { "type": "integer" },\n    "message": { "type": "string" },\n    "data": { "type": "object" }\n  },\n  "required": ["status","code"]\n}`,
+  sentiment: `{\n  "type": "object",\n  "properties": {\n    "sentiment": { "type": "string", "enum": ["positive","neutral","negative"] },\n    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },\n    "summary": { "type": "string" },\n    "keywords": { "type": "array", "items": { "type": "string" } }\n  },\n  "required": ["sentiment","confidence"]\n}`,
+  extraction: `{\n  "type": "object",\n  "properties": {\n    "people": { "type": "array", "items": { "type": "string" } },\n    "organizations": { "type": "array", "items": { "type": "string" } },\n    "locations": { "type": "array", "items": { "type": "string" } },\n    "dates": { "type": "array", "items": { "type": "string" } }\n  }\n}`,
+};
+
+// ============================================================
 // STATE
 // ============================================================
 const state = {
@@ -1003,6 +1137,8 @@ const state = {
   activeSessionId: null,
   selectedModel: 'gpt-4o',
   selectedProvider: 'openai',
+  outputMode: 'text',   // 'text' | 'json'
+  activeSchema: '',
   settings: {
     openaiKey: '',
     anthropicKey: '',
@@ -1143,6 +1279,29 @@ function renderMarkdown(text) {
   return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
 }
 
+function renderJsonMessage(raw) {
+  let parsed, isValid = false, pretty = raw;
+  // Strip possible markdown fences the model added anyway
+  const stripped = raw.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+  try {
+    parsed = JSON.parse(stripped);
+    isValid = true;
+    pretty  = JSON.stringify(parsed, null, 2);
+  } catch {
+    pretty = stripped;
+  }
+  const badge = isValid
+    ? `<span class="json-badge valid">✓ Valid JSON</span>`
+    : `<span class="json-badge invalid">✗ Invalid JSON</span>`;
+  let highlighted;
+  try {
+    highlighted = hljs.highlight(pretty, { language: 'json' }).value;
+  } catch {
+    highlighted = escapeHtml(pretty);
+  }
+  return `${badge}<pre><div class="code-header"><span>json</span><button class="copy-code-btn" onclick="copyCode(this)">Copy</button></div><code>${highlighted}</code></pre>`;
+}
+
 window.copyCode = function(btn) {
   const code = btn.closest('pre').querySelector('code');
   navigator.clipboard.writeText(code.innerText).then(() => {
@@ -1262,6 +1421,9 @@ function createMessageEl(msg) {
   if (msg.isError) {
     bodyHtml = `<div class="error-title">⚠ Error</div><div>${escapeHtml(msg.content)}</div>`
       + (msg.retryable ? `<button class="retry-btn" onclick="retryLastMessage()">↺ Retry</button>` : '');
+  } else if (msg.role === 'assistant' && msg.jsonMode && msg.content) {
+    bodyHtml = renderJsonMessage(msg.content)
+      + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
   } else if (msg.role === 'assistant') {
     bodyHtml = renderMarkdown(msg.content)
       + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
@@ -1374,7 +1536,7 @@ async function sendMessage(text) {
 
   setLoading(true);
 
-  const assistantMsg = { id: uid(), role: 'assistant', content: '', timestamp: Date.now() };
+  const assistantMsg = { id: uid(), role: 'assistant', content: '', timestamp: Date.now(), jsonMode: state.outputMode === 'json' };
 
   if (state.settings.stream) {
     session.messages.push(assistantMsg);
@@ -1390,8 +1552,10 @@ async function sendMessage(text) {
           session.messages = session.messages.filter(m => m.id !== assistantMsg.id);
           msgEl.remove();
         } else {
-          bodyEl.innerHTML = renderMarkdown(assistantMsg.content)
-            + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
+          const html = assistantMsg.jsonMode
+            ? renderJsonMessage(assistantMsg.content)
+            : renderMarkdown(assistantMsg.content);
+          bodyEl.innerHTML = html + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
           applyHighlight(bodyEl);
         }
       } else {
@@ -1476,16 +1640,26 @@ async function streamResponse(session, assistantMsg, bodyEl) {
       if (chunk === null) break; // [DONE]
       if (chunk) {
         assistantMsg.content += chunk;
-        bodyEl.innerHTML = renderMarkdown(assistantMsg.content) + '<span class="streaming-cursor"></span>';
-        applyHighlight(bodyEl);
+        if (assistantMsg.jsonMode) {
+          bodyEl.innerHTML = `<pre style="margin:0"><code class="language-json">${escapeHtml(assistantMsg.content)}</code></pre><span class="streaming-cursor"></span>`;
+        } else {
+          bodyEl.innerHTML = renderMarkdown(assistantMsg.content) + '<span class="streaming-cursor"></span>';
+          applyHighlight(bodyEl);
+        }
         scrollToBottom();
       }
     }
   }
 
-  bodyEl.innerHTML = renderMarkdown(assistantMsg.content)
-    + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
-  applyHighlight(bodyEl);
+  if (assistantMsg.jsonMode) {
+    bodyEl.innerHTML = renderJsonMessage(assistantMsg.content)
+      + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
+    applyHighlight(bodyEl);
+  } else {
+    bodyEl.innerHTML = renderMarkdown(assistantMsg.content)
+      + `<button class="copy-btn" onclick="copyMessage(this)">Copy</button>`;
+    applyHighlight(bodyEl);
+  }
   scrollToBottom();
 }
 
@@ -1516,22 +1690,25 @@ function buildRequest(session, stream) {
   if (!apiKey) throw new Error('No API key configured. Open ⚙ Settings to add your key.');
 
   const allMessages = buildMessages(session);
+  const isJson = state.outputMode === 'json';
 
   if (provider === 'openai') {
+    const bodyObj = {
+      model: state.selectedModel,
+      messages: allMessages,
+      temperature: state.settings.temperature,
+      max_tokens: state.settings.maxTokens,
+      top_p: state.settings.topP,
+      stream,
+    };
+    if (isJson) bodyObj.response_format = { type: 'json_object' };
     return {
       url: 'https://api.openai.com/v1/chat/completions',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: state.selectedModel,
-        messages: allMessages,
-        temperature: state.settings.temperature,
-        max_tokens: state.settings.maxTokens,
-        top_p: state.settings.topP,
-        stream,
-      }),
+      body: JSON.stringify(bodyObj),
     };
   } else {
     const { system, msgs } = splitAnthropicMessages(allMessages);
@@ -1558,9 +1735,14 @@ function buildRequest(session, stream) {
 
 function buildMessages(session) {
   const msgs = [];
-  if (state.settings.systemPrompt) {
-    msgs.push({ role: 'system', content: state.settings.systemPrompt });
+  let systemContent = state.settings.systemPrompt || '';
+  if (state.outputMode === 'json') {
+    const schemaHint = state.activeSchema.trim()
+      ? `\n\nYou must respond with valid JSON only — no prose, no markdown fences. The JSON must conform to this schema:\n${state.activeSchema.trim()}`
+      : '\n\nYou must respond with valid JSON only — no prose, no markdown fences.';
+    systemContent += schemaHint;
   }
+  if (systemContent) msgs.push({ role: 'system', content: systemContent });
   session.messages.forEach(m => {
     if ((m.role === 'user' || m.role === 'assistant') && !m.isError) {
       msgs.push({ role: m.role, content: m.content });
@@ -1835,6 +2017,52 @@ function init() {
     document.getElementById('char-counter').textContent = '0 tokens est.';
     sendMessage(text);
   }
+
+  // ----- OUTPUT MODE TABS -----
+  document.querySelectorAll('.mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.outputMode = tab.dataset.mode;
+      document.getElementById('schema-panel').classList.toggle('visible', state.outputMode === 'json');
+    });
+  });
+
+  // ----- SCHEMA TEMPLATES -----
+  document.getElementById('schema-template-select').addEventListener('change', e => {
+    const key = e.target.value;
+    if (key && SCHEMA_TEMPLATES[key]) {
+      document.getElementById('schema-editor').value = SCHEMA_TEMPLATES[key];
+      state.activeSchema = SCHEMA_TEMPLATES[key];
+      validateSchemaEditor();
+    }
+    e.target.value = '';
+  });
+
+  // ----- SCHEMA EDITOR VALIDATION -----
+  const schemaEditor = document.getElementById('schema-editor');
+  const schemaMsg    = document.getElementById('schema-validation-msg');
+  function validateSchemaEditor() {
+    const val = schemaEditor.value.trim();
+    state.activeSchema = val;
+    if (!val) {
+      schemaEditor.className = '';
+      schemaMsg.textContent = '';
+      schemaMsg.className = 'test-result';
+      return;
+    }
+    try {
+      JSON.parse(val);
+      schemaEditor.classList.remove('invalid'); schemaEditor.classList.add('valid');
+      schemaMsg.textContent = '✓ Valid JSON';
+      schemaMsg.className = 'ok';
+    } catch (err) {
+      schemaEditor.classList.remove('valid'); schemaEditor.classList.add('invalid');
+      schemaMsg.textContent = `✗ ${err.message}`;
+      schemaMsg.className = 'fail';
+    }
+  }
+  schemaEditor.addEventListener('input', validateSchemaEditor);
 
   // ----- QUICK PROMPTS -----
   document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
