@@ -2244,7 +2244,7 @@ function buildRequest(session, stream) {
       model: state.selectedModel,
       messages: allMessages,
       temperature: state.settings.temperature,
-      max_tokens: state.settings.maxTokens,
+      max_completion_tokens: state.settings.maxTokens,
       top_p: state.settings.topP,
       stream,
     };
@@ -2386,7 +2386,7 @@ async function testConnection(provider) {
     if (provider === 'openai') {
       url     = 'https://api.openai.com/v1/chat/completions';
       headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` };
-      body    = JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'hi' }], max_tokens: 3 });
+      body    = JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'hi' }], max_completion_tokens: 3 });
     } else {
       url     = 'https://api.anthropic.com/v1/messages';
       headers = {
@@ -2639,7 +2639,7 @@ function buildCompareRequest(prompt, model, provider, stream) {
       body: JSON.stringify({
         model, messages,
         temperature: state.settings.temperature,
-        max_tokens: state.settings.maxTokens,
+        max_completion_tokens: state.settings.maxTokens,
         top_p: state.settings.topP,
         stream,
       }),
