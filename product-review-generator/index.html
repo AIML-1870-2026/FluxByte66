@@ -457,6 +457,8 @@
       <span class="dot">●</span>
       Product Review Generator
     </div>
+    <div style="flex:1"></div>
+    <a href="about.html" style="font-size:13px;color:var(--text-secondary);text-decoration:none;border:1px solid var(--border);padding:5px 12px;border-radius:5px;transition:all 150ms ease;" onmouseover="this.style.color='var(--text-primary)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text-secondary)';this.style.borderColor='var(--border)'">About / Legal</a>
   </div>
 
   <!-- MAIN -->
@@ -823,7 +825,7 @@ Write the review as a real customer would. Include a star rating (out of 5), a h
     function showOutput(markdown) {
       const card = document.getElementById('output-card');
       const body = document.getElementById('output-body');
-      card.style.display = '';
+      card.style.display = 'block';
       body.innerHTML = marked.parse(markdown);
       card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -831,7 +833,7 @@ Write the review as a real customer would. Include a star rating (out of 5), a h
     function showError(msg) {
       const card = document.getElementById('output-card');
       const body = document.getElementById('output-body');
-      card.style.display = '';
+      card.style.display = 'block';
       body.innerHTML = `
         <div class="error-block">
           <div class="error-title">⚠ Error</div>

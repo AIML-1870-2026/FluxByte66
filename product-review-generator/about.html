@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About / Legal — Product Review Generator</title>
+  <style>
+    :root {
+      --bg-primary:    #0d0d0d;
+      --bg-surface:    #111111;
+      --bg-elevated:   #1a1a1a;
+      --accent:        #c0392b;
+      --accent-bright: #e74c3c;
+      --accent-muted:  #7b1e14;
+      --text-primary:  #f0f0f0;
+      --text-secondary:#888888;
+      --border:        #2a2a2a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    #header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    #logo {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    #logo .dot { color: var(--accent); font-size: 20px; }
+
+    #header .sep {
+      color: var(--border);
+      font-size: 18px;
+    }
+
+    #header .page-title {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    #header .spacer { flex: 1; }
+
+    #header a.back {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 5px;
+      transition: all 150ms ease;
+    }
+    #header a.back:hover { color: var(--text-primary); border-color: var(--accent); }
+
+    #content {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .warning-banner {
+      background: rgba(192,57,43,0.1);
+      border: 1px solid var(--accent-muted);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 18px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .warning-banner .icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+
+    .warning-banner .text strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 5px;
+      color: var(--accent-bright);
+    }
+
+    .warning-banner .text p {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .section {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+    }
+
+    .section-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-body p {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .section-body p strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .section-body ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-body ul li {
+      display: flex;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .section-body ul li .bullet {
+      color: var(--accent);
+      flex-shrink: 0;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--accent-muted);
+      color: var(--accent-bright);
+      background: rgba(192,57,43,0.07);
+    }
+
+    .disclaimer-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .disclaimer-box strong {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="header">
+    <a href="index.html" id="logo">
+      <span class="dot">●</span>
+      Product Review Generator
+    </a>
+    <span class="sep">/</span>
+    <span class="page-title">About &amp; Legal</span>
+    <div class="spacer"></div>
+    <a href="index.html" class="back">← Back</a>
+  </div>
+
+  <div id="content">
+
+    <!-- Warning Banner -->
+    <div class="warning-banner">
+      <span class="icon">⚠</span>
+      <div class="text">
+        <strong>This tool is for educational and demonstration purposes only.</strong>
+        <p>AI-generated product reviews must not be published, submitted, or used in any capacity as genuine customer feedback. Doing so may violate federal law, platform terms of service, and consumer protection regulations.</p>
+      </div>
+    </div>
+
+    <!-- What This Is -->
+    <div class="section">
+      <div class="section-header">What This Tool Is</div>
+      <div class="section-body">
+        <p>The Product Review Generator is a <strong>classroom demonstration project</strong> built for the AIML 1870 course. It shows how large language models can be prompted to produce structured, tone-controlled text from a set of inputs.</p>
+        <p>It is intended to illustrate concepts in prompt engineering, LLM API integration, and UI design. It is <strong>not</strong> a tool for creating reviews to be published anywhere.</p>
+      </div>
+    </div>
+
+    <!-- Why You Cannot Use This Officially -->
+    <div class="section">
+      <div class="section-header">Why This Must Not Be Used Officially</div>
+      <div class="section-body">
+        <ul>
+          <li>
+            <span class="bullet">●</span>
+            <span><strong>FTC Regulations (16 CFR Part 255):</strong> The Federal Trade Commission requires that all endorsements and testimonials reflect the honest opinions of genuine customers. Publishing AI-generated reviews as real customer feedback is deceptive advertising and a federal violation, subject to civil penalties.</span>
+          </li>
+          <li>
+            <span class="bullet">●</span>
+            <span><strong>FTC Rule on Fake Reviews (2024):</strong> In August 2024, the FTC finalized a rule explicitly banning fake or AI-generated reviews. Violations can result in civil penalties up to $51,744 per violation.</span>
+          </li>
+          <li>
+            <span class="bullet">●</span>
+            <span><strong>Platform Terms of Service:</strong> Amazon, Google, Yelp, Trustpilot, and virtually every major review platform prohibit fake or incentivized reviews. Submitting AI-generated reviews risks permanent account suspension, listing removal, and legal action from the platform.</span>
+          </li>
+          <li>
+            <span class="bullet">●</span>
+            <span><strong>Consumer Review Fairness Act (15 U.S.C. § 45b):</strong> Federal law protecting the integrity of consumer reviews. Fake reviews undermine consumer trust and may constitute unfair or deceptive acts or practices under Section 5 of the FTC Act.</span>
+          </li>
+          <li>
+            <span class="bullet">●</span>
+            <span><strong>State Consumer Protection Laws:</strong> Many states have their own deceptive trade practices statutes (e.g., California's UCL, New York's GBL § 349) that independently prohibit fake reviews and allow private lawsuits from harmed consumers.</span>
+          </li>
+          <li>
+            <span class="bullet">●</span>
+            <span><strong>Common Law Fraud:</strong> Presenting an AI-generated review as a genuine customer experience can constitute fraudulent misrepresentation, exposing individuals and businesses to civil liability.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Platforms That Prohibit This -->
+    <div class="section">
+      <div class="section-header">Platforms That Explicitly Prohibit AI-Generated Reviews</div>
+      <div class="section-body">
+        <div class="tag-row">
+          <span class="tag">Amazon</span>
+          <span class="tag">Google Reviews</span>
+          <span class="tag">Yelp</span>
+          <span class="tag">Trustpilot</span>
+          <span class="tag">TripAdvisor</span>
+          <span class="tag">G2</span>
+          <span class="tag">Capterra</span>
+          <span class="tag">Better Business Bureau</span>
+          <span class="tag">Apple App Store</span>
+          <span class="tag">Google Play</span>
+          <span class="tag">Glassdoor</span>
+          <span class="tag">Indeed</span>
+        </div>
+        <p>This list is not exhaustive. Assume any consumer-facing review platform prohibits synthetic or AI-generated content submitted as genuine user feedback.</p>
+      </div>
+    </div>
+
+    <!-- Acceptable Uses -->
+    <div class="section">
+      <div class="section-header">Acceptable Uses of This Tool</div>
+      <div class="section-body">
+        <ul>
+          <li><span class="bullet">●</span><span>Learning how LLM APIs work and how prompts influence output</span></li>
+          <li><span class="bullet">●</span><span>Exploring tone and sentiment control in language model responses</span></li>
+          <li><span class="bullet">●</span><span>Studying how to build single-page AI-powered web applications</span></li>
+          <li><span class="bullet">●</span><span>Academic coursework, demos, and classroom discussions</span></li>
+          <li><span class="bullet">●</span><span>Generating internal placeholder text for UI mockups or design prototypes — clearly labeled as synthetic</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer-box">
+      <strong>Disclaimer:</strong> This tool is provided as-is for educational purposes. The authors accept no liability for misuse. Users are solely responsible for ensuring their use of AI-generated content complies with all applicable laws, regulations, and platform policies. Nothing on this page constitutes legal advice.
+    </div>
+
+  </div>
+
+</body>
+</html>
