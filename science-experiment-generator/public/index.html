@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔬 Science Experiment Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="header">
+    <div id="logo"><span class="flask">🔬</span> Science Experiment Generator</div>
+    <div id="header-right">
+      <label for="api-key-input" class="api-label">API Key</label>
+      <input type="password" id="api-key-input" placeholder="sk-… (or use .env)" autocomplete="off" spellcheck="false">
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- LEFT PANEL: Controls -->
+    <aside id="controls-panel">
+
+      <div class="section">
+        <label class="field-label" for="grade-select">Grade Level</label>
+        <select id="grade-select">
+          <option value="Kindergarten">Kindergarten</option>
+          <option value="Grade 1–2">Grade 1–2</option>
+          <option value="Grade 3–4">Grade 3–4</option>
+          <option value="Grade 5–6" selected>Grade 5–6</option>
+          <option value="Grade 7–8">Grade 7–8</option>
+          <option value="Grade 9–10">Grade 9–10</option>
+          <option value="Grade 11–12">Grade 11–12</option>
+        </select>
+      </div>
+
+      <div class="section">
+        <label class="field-label" for="materials-input">Available Materials</label>
+        <textarea id="materials-input" rows="4" placeholder="Type your materials here, comma or newline separated…"></textarea>
+        <p class="field-hint">Or click supplies below to add them quickly.</p>
+      </div>
+
+      <div class="section" id="supplies-section">
+        <div class="field-label">Quick-Add Supplies</div>
+        <div id="supply-grid">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+      <button id="generate-btn">
+        <span id="generate-icon">⚗️</span>
+        <span id="generate-label">Generate Experiment</span>
+      </button>
+
+    </aside>
+
+    <!-- CENTER PANEL: Results -->
+    <main id="results-panel">
+      <div id="results-placeholder">
+        <div class="placeholder-icon">🧪</div>
+        <p>Select a grade level, add some materials, and click <strong>Generate Experiment</strong> to get started.</p>
+      </div>
+
+      <div id="results-content" hidden>
+        <div id="results-meta">
+          <span id="difficulty-badge" class="badge"></span>
+        </div>
+        <div id="results-body"></div>
+
+        <div id="results-actions">
+          <button id="suggest-subs-btn" class="action-btn secondary">🔄 Suggest Substitutions</button>
+          <button id="print-btn" class="action-btn secondary">🖨️ Print Worksheet</button>
+          <button id="save-btn" class="action-btn secondary">💾 Save to History</button>
+        </div>
+
+        <!-- Substitutions panel -->
+        <details id="subs-panel" hidden>
+          <summary>Substitution Suggestions</summary>
+          <div id="subs-unavailable-list"></div>
+          <div id="subs-result"></div>
+          <button id="get-subs-btn" class="action-btn primary small">Get Substitutions</button>
+        </details>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL: History sidebar -->
+    <aside id="history-panel">
+      <div id="history-header">
+        <span id="history-title">History</span>
+        <button id="clear-history-btn" title="Clear all history">✕ Clear</button>
+      </div>
+      <div id="history-list">
+        <p id="history-empty">No saved experiments yet.</p>
+      </div>
+    </aside>
+
+  </div><!-- #main -->
+
+</div><!-- #app -->
+
+<!-- PRINT WORKSHEET (hidden, revealed on print) -->
+<div id="print-worksheet" hidden>
+  <div class="ws-header">
+    <h1 id="ws-title"></h1>
+    <div id="ws-difficulty"></div>
+    <p class="ws-meta">Grade: <span id="ws-grade"></span> &nbsp;|&nbsp; Date: <span id="ws-date"></span></p>
+  </div>
+  <div class="ws-section">
+    <h2>My Hypothesis</h2>
+    <div class="ws-lines">
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+    </div>
+  </div>
+  <div class="ws-section">
+    <h2>Materials Checklist</h2>
+    <ul id="ws-materials" class="ws-checklist"></ul>
+  </div>
+  <div class="ws-section">
+    <h2>Step-by-Step Instructions</h2>
+    <ol id="ws-steps"></ol>
+  </div>
+  <div class="ws-section">
+    <h2>My Observations</h2>
+    <div class="ws-lines">
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+    </div>
+  </div>
+  <div class="ws-section">
+    <h2>My Conclusions</h2>
+    <div class="ws-lines">
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+      <div class="ws-line"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
