@@ -393,11 +393,10 @@ function renderHistory() {
     item.innerHTML = `
       <div class="history-item-title">${entry.title}</div>
       <div class="history-item-meta">${entry.grade} · ${entry.date}</div>
-      <span class="history-badge ${entry.difficulty || 'easy'}">${
-        entry.difficulty === 'easy'   ? '⭐ Easy'   :
-        entry.difficulty === 'medium' ? '⭐⭐ Med'  :
-        entry.difficulty === 'hard'   ? '⭐⭐⭐ Hard' : entry.difficulty
-      }</span>`;
+      ${entry.difficulty === 'easy'   ? '<span class="history-badge easy">⭐ Easy</span>'   :
+        entry.difficulty === 'medium' ? '<span class="history-badge medium">⭐⭐ Med</span>' :
+        entry.difficulty === 'hard'   ? '<span class="history-badge hard">⭐⭐⭐ Hard</span>' : ''
+      }`;
 
     item.addEventListener('click', () => {
       currentMarkdown   = entry.markdown;
