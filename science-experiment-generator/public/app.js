@@ -201,11 +201,11 @@ function renderDifficultyBadge(difficulty) {
   if (difficulty.includes('easy'))   { label = '⭐ Easy';         cls = 'easy'; }
   else if (difficulty.includes('medium')) { label = '⭐⭐ Medium'; cls = 'medium'; }
   else if (difficulty.includes('hard'))   { label = '⭐⭐⭐ Hard'; cls = 'hard'; }
-  else { difficultyBadge.hidden = true; return; }
+  else { difficultyBadge.style.display = 'none'; return; }
 
-  difficultyBadge.hidden      = false;
-  difficultyBadge.textContent = label;
-  difficultyBadge.className   = `badge ${cls}`;
+  difficultyBadge.style.display = '';
+  difficultyBadge.textContent   = label;
+  difficultyBadge.className     = `badge ${cls}`;
 }
 
 function showError(msg) {
