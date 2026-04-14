@@ -201,8 +201,9 @@ function renderDifficultyBadge(difficulty) {
   if (difficulty.includes('easy'))   { label = '⭐ Easy';         cls = 'easy'; }
   else if (difficulty.includes('medium')) { label = '⭐⭐ Medium'; cls = 'medium'; }
   else if (difficulty.includes('hard'))   { label = '⭐⭐⭐ Hard'; cls = 'hard'; }
-  else { label = difficulty; cls = 'easy'; }
+  else { difficultyBadge.hidden = true; return; }
 
+  difficultyBadge.hidden      = false;
   difficultyBadge.textContent = label;
   difficultyBadge.className   = `badge ${cls}`;
 }
