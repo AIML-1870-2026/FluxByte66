@@ -1127,19 +1127,212 @@ function toggleCollapsible(btn) {
 // ══════════════════════════════════════════════════════════════
 //  3D ORBITAL GLOBE
 // ══════════════════════════════════════════════════════════════
-function distToAlt(km) { return Math.max(0.05, Math.log10(km/6371)*0.6); }
-function seededRand(s)  { const x=Math.sin(s+1)*10000; return x-Math.floor(x); }
+function distToAlt(km) { return Math.max(0.05, Math.log10(km / 6371) * 0.6); }
+function seededRand(s)  { const x = Math.sin(s + 1) * 10000; return x - Math.floor(x); }
+
+// Convert lat/lng/altitude → Three.js world-space Vector3.
+// Globe.gl uses polar2Cartesian with phi=(90-lat)*DEG, theta=(90+lng)*DEG.
+function latLngAltToXYZ(lat, lng, alt) {
+  const R     = state.globe.instance.getGlobeRadius();
+  const r     = R * (1 + alt);
+  const phi   = (90 - lat) * (Math.PI / 180);
+  const theta = (90 + lng) * (Math.PI / 180);
+  return new THREE.Vector3(
+    r * Math.sin(phi) * Math.cos(theta),
+    r * Math.cos(phi),
+    r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+// Cached radial-gradient glow textures (one per hex colour string).
+const _glowCache = {};
+function makeGlowTexture(hex) {
+  if (_glowCache[hex]) return _glowCache[hex];
+  const S = 128, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const ctx = c.getContext('2d');
+  const g   = ctx.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+  g.addColorStop(0,    hex);
+  g.addColorStop(0.25, hex + 'cc');
+  g.addColorStop(0.55, hex + '55');
+  g.addColorStop(1,    hex + '00');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+  return (_glowCache[hex] = new THREE.CanvasTexture(c));
+}
+
+// ── sprite layer ─────────────────────────────────────────────
+let _spriteGroup    = null;   // THREE.Group added to scene
+let _clickTargets   = [];     // sprites eligible for raycasting
+let _hazSprites     = [];     // hazardous sprites for pulse animation
+let _pulseRAF       = null;
+
+function initSpriteLayer(g) {
+  _spriteGroup = new THREE.Group();
+  g.scene().add(_spriteGroup);
+}
+
+function rebuildSprites() {
+  if (!_spriteGroup) return;
+
+  // Dispose old sprites to avoid texture/material leaks
+  _spriteGroup.children.slice().forEach(obj => {
+    if (obj.material) obj.material.dispose();
+    _spriteGroup.remove(obj);
+  });
+  _clickTargets = [];
+  _hazSprites   = [];
+
+  const rows   = state.neows.rows || [];
+  const layers = state.globe.layers;
+  const asts   = [...rows].sort((a, b) => a.dist_km - b.dist_km).slice(0, 50);
+
+  asts.forEach((a, i) => {
+    if (a.hazardous ? !layers.hazardous : !layers.safe) return;
+
+    const seed = parseInt(a.id, 10) || (i * 7919);
+    const lat  = (seededRand(seed)       - 0.5) * 160;  // ±80°
+    const lng  = (seededRand(seed + 999) - 0.5) * 360;
+    const alt  = distToAlt(a.dist_km);
+
+    // Size inversely proportional to magnitude (lower H = bigger object)
+    const mag       = a.mag ?? 25;
+    const baseScale = Math.max(1.5, Math.min(8, (30 - mag) / 3));
+    const color     = a.hazardous ? '#ff1a1a' : '#ff6600';
+
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map:         makeGlowTexture(color),
+      transparent: true,
+      depthWrite:  false,
+      blending:    THREE.AdditiveBlending,
+    }));
+    sprite.scale.setScalar(baseScale);
+    sprite.position.copy(latLngAltToXYZ(lat, lng, alt));
+    sprite.userData = { _type: 'asteroid', _data: a, _baseScale: baseScale };
+
+    _spriteGroup.add(sprite);
+    _clickTargets.push(sprite);
+    if (a.hazardous) _hazSprites.push(sprite);
+  });
+
+  // Moon
+  if (layers.moon) {
+    const moon = new THREE.Sprite(new THREE.SpriteMaterial({
+      map:         makeGlowTexture('#cccccc'),
+      transparent: true,
+      depthWrite:  false,
+      blending:    THREE.AdditiveBlending,
+    }));
+    moon.scale.setScalar(10);
+    moon.position.copy(latLngAltToXYZ(23.45, 0, distToAlt(LD_KM)));
+    moon.userData = { _type: 'moon', _data: null };
+    _spriteGroup.add(moon);
+    _clickTargets.push(moon);
+  }
+
+  // 1 LD reference ring (equatorial LineLoop, no raycasting needed)
+  buildLDRing(layers.ring);
+
+  // Restart pulse animation
+  startPulseAnim();
+}
+
+function buildLDRing(visible) {
+  // Remove any existing ring mesh
+  const old = _spriteGroup.getObjectByName('ld-ring');
+  if (old) { old.geometry.dispose(); old.material.dispose(); _spriteGroup.remove(old); }
+  if (!visible) return;
+
+  const R       = state.globe.instance.getGlobeRadius();
+  const ringAlt = distToAlt(LD_KM);
+  const r       = R * (1 + ringAlt);
+  const pts     = [];
+  for (let i = 0; i <= 256; i++) {
+    const a = (i / 256) * Math.PI * 2;
+    pts.push(new THREE.Vector3(r * Math.cos(a), 0, r * Math.sin(a)));
+  }
+  const ring = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.6 })
+  );
+  ring.name = 'ld-ring';
+  _spriteGroup.add(ring);
+}
+
+// Pulse hazardous sprites: scale oscillates ±20 % at ~1 Hz
+function startPulseAnim() {
+  if (_pulseRAF) cancelAnimationFrame(_pulseRAF);
+  if (_hazSprites.length === 0) return;
+  const t0 = performance.now();
+  function loop(now) {
+    const t   = (now - t0) / 1000;
+    const amp = 1 + 0.20 * Math.sin(t * Math.PI * 1.6);
+    _hazSprites.forEach(s => s.scale.setScalar(s.userData._baseScale * amp));
+    _pulseRAF = requestAnimationFrame(loop);
+  }
+  _pulseRAF = requestAnimationFrame(loop);
+}
+
+// ── raycaster click / hover ───────────────────────────────────
+function setupRaycasting(g) {
+  const container = document.getElementById('globe-container');
+  const raycaster  = new THREE.Raycaster();
+  raycaster.params.Sprite = { threshold: 1 };
+  const mouse = new THREE.Vector2();
+  let   downPos = null;
+
+  // Track pointer-down to distinguish click from drag
+  container.addEventListener('pointerdown', e => {
+    downPos = { x: e.clientX, y: e.clientY };
+  });
+
+  container.addEventListener('pointerup', e => {
+    if (!downPos) return;
+    const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
+    downPos = null;
+    if (Math.hypot(dx, dy) > 6) return;  // was a drag — ignore
+
+    const rect = container.getBoundingClientRect();
+    mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+    mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, g.camera());
+
+    const hits = raycaster.intersectObjects(_clickTargets, false);
+    if (hits.length) {
+      onSpriteClick(hits[0].object.userData);
+    } else {
+      closePanel();
+    }
+  });
+
+  container.addEventListener('mousemove', e => {
+    const rect = container.getBoundingClientRect();
+    mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+    mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, g.camera());
+    const hits = raycaster.intersectObjects(_clickTargets, false);
+    container.style.cursor = hits.length ? 'pointer' : 'default';
+  });
+}
+
+function updateGlobePoints() { rebuildSprites(); }
+
+function toggleLayer(name) {
+  state.globe.layers[name] = !state.globe.layers[name];
+  document.getElementById('leg-' + name).classList.toggle('off', !state.globe.layers[name]);
+  rebuildSprites();
+}
 
 function initGlobe() {
   const testC = document.createElement('canvas');
-  const gl    = testC.getContext('webgl')||testC.getContext('experimental-webgl');
+  const gl    = testC.getContext('webgl') || testC.getContext('experimental-webgl');
   if (!gl) {
-    document.getElementById('webgl-fallback').style.display='block';
+    document.getElementById('webgl-fallback').style.display = 'block';
     switchTab('neows'); return;
   }
-  if (typeof Globe==='undefined') {
-    document.getElementById('webgl-fallback').textContent='⚠ globe.gl failed to load.';
-    document.getElementById('webgl-fallback').style.display='block'; return;
+  if (typeof Globe === 'undefined') {
+    document.getElementById('webgl-fallback').textContent = '⚠ globe.gl failed to load.';
+    document.getElementById('webgl-fallback').style.display = 'block'; return;
   }
 
   const container = document.getElementById('globe-container');
@@ -1148,10 +1341,6 @@ function initGlobe() {
     .backgroundColor('#000000')
     .atmosphereColor('#cc0000')
     .atmosphereAltitude(0.15)
-    .pointsData([]).pointLat('lat').pointLng('lng').pointAltitude('alt')
-    .pointColor('color').pointRadius('radius').pointLabel('label')
-    .onPointClick(onPointClick)
-    .onPointHover(pt => { container.style.cursor = pt?'pointer':'default'; })
     (container);
 
   g.controls().autoRotate      = true;
@@ -1160,10 +1349,14 @@ function initGlobe() {
   state.globe.instance = g;
 
   addStarfield(g);
+  initSpriteLayer(g);
+  setupRaycasting(g);
+
   resizeGlobe();
-  window.addEventListener('resize', ()=>{ if(state.activeTab==='orbital') resizeGlobe(); });
-  setTimeout(()=>document.getElementById('controls-hint').classList.add('hidden'), 5000);
-  if (state.neows.rows) updateGlobePoints();
+  window.addEventListener('resize', () => { if (state.activeTab === 'orbital') resizeGlobe(); });
+  setTimeout(() => document.getElementById('controls-hint').classList.add('hidden'), 5000);
+
+  if (state.neows.rows) rebuildSprites();
 }
 
 function resizeGlobe() {
@@ -1178,57 +1371,18 @@ function addStarfield(g) {
     const scene = g.scene();
     const geo   = new THREE.BufferGeometry();
     const verts = [];
-    for (let i=0;i<2000;i++){
-      const r=500, theta=Math.random()*Math.PI*2, phi=Math.acos(2*Math.random()-1);
-      verts.push(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta), r*Math.cos(phi));
+    for (let i = 0; i < 2000; i++) {
+      const r = 500, t = Math.random() * Math.PI * 2, p = Math.acos(2 * Math.random() - 1);
+      verts.push(r * Math.sin(p) * Math.cos(t), r * Math.sin(p) * Math.sin(t), r * Math.cos(p));
     }
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
-    scene.add(new THREE.Points(geo, new THREE.PointsMaterial({color:0xffffff,size:0.6,sizeAttenuation:true})));
-  } catch(e) { console.warn('Starfield skipped:',e); }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, sizeAttenuation: true })));
+  } catch (e) { console.warn('Starfield skipped:', e); }
 }
 
-function buildPointsData() {
-  const rows   = state.neows.rows || [];
-  const layers = state.globe.layers;
-  const points = [];
-  const asts   = [...rows].sort((a,b)=>a.dist_km-b.dist_km).slice(0,50);
-
-  asts.forEach((a,i) => {
-    if (a.hazardous ? !layers.hazardous : !layers.safe) return;
-    const seed   = parseInt(a.id,10)||(i*7919);
-    const lat    = (seededRand(seed)-0.5)*160;
-    const lng    = (seededRand(seed+999)-0.5)*360;
-    const mag    = a.mag??25;
-    const radius = Math.max(0.25, Math.min(1.5, (30-mag)/12));
-    points.push({lat, lng, alt:distToAlt(a.dist_km), color:a.hazardous?'#ff1a1a':'#ff6600',
-      radius, label:a.name, _type:'asteroid', _data:a});
-  });
-
-  if (layers.moon) points.push({lat:23.45,lng:0,alt:distToAlt(LD_KM),
-    color:'#cccccc',radius:0.9,label:'🌕 Moon — 1 Lunar Distance (384,400 km)',_type:'moon',_data:null});
-
-  if (layers.ring) {
-    const ra = distToAlt(LD_KM);
-    for (let lng=0;lng<360;lng+=6)
-      points.push({lat:0,lng,alt:ra,color:'#333333',radius:0.12,label:'',_type:'ring',_data:null});
-  }
-  return points;
-}
-
-function updateGlobePoints() {
-  const g = state.globe.instance;
-  if (g) g.pointsData(buildPointsData());
-}
-
-function toggleLayer(name) {
-  state.globe.layers[name] = !state.globe.layers[name];
-  document.getElementById('leg-'+name).classList.toggle('off',!state.globe.layers[name]);
-  updateGlobePoints();
-}
-
-function onPointClick(pt) {
+function onSpriteClick(pt) {
   if (!pt) return;
-  if (state.globe.instance) state.globe.instance.controls().autoRotate=false;
+  if (state.globe.instance) state.globe.instance.controls().autoRotate = false;
 
   if (pt._type==='moon') {
     showPanel('🌕 The Moon', `
