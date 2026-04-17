@@ -723,7 +723,7 @@
   <div class="logo"><span>♠</span> BLACKJACK AI</div>
   <div class="header-right">
     <div class="key-input-wrap" id="keyInputWrap">
-      <input type="password" id="keyInput" placeholder="sk-ant-… paste API key" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off">
+      <input type="password" id="keyInput" placeholder="sk-… paste OpenAI API key" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off">
       <button class="key-toggle" id="keyToggle" onclick="toggleKeyVisibility()" title="Show/hide key">👁</button>
       <button class="key-input-submit" onclick="submitKeyInput()">Set Key</button>
     </div>
@@ -737,7 +737,7 @@
 
 <!-- WARN BANNER -->
 <div id="warnBanner">
-  <span>⚠ No API key loaded — AI advisor unavailable. Paste your key in the input or upload a .env file.</span>
+  <span>⚠ No OpenAI API key loaded — AI advisor unavailable. Paste your key in the input or upload a .env file containing OPENAI_API_KEY.</span>
   <span class="warn-close" onclick="document.getElementById('warnBanner').classList.remove('visible')">✕</span>
 </div>
 
@@ -1237,19 +1237,20 @@ async function queryAI(silent = false) {
   console.log(`[BJ-AGENT] AI queried — detail level: ${detailLevel} | key prefix: ${apiKey.slice(0,14)}... (len ${apiKey.length})`);
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'gpt-4o',
         max_tokens: 1000,
-        system: SYSTEM_PROMPT(detailLevel),
-        messages: [{ role: 'user', content: ctx }],
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT(detailLevel) },
+          { role: 'user', content: ctx },
+        ],
       }),
     });
 
@@ -1273,7 +1274,7 @@ async function queryAI(silent = false) {
     }
 
     const data = await resp.json();
-    const rawText = data.content?.[0]?.text || '';
+    const rawText = data.choices?.[0]?.message?.content || '';
     console.log('[BJ-AGENT] AI raw response:', rawText);
 
     // Strip markdown code fences if model wraps JSON despite instructions
@@ -1900,7 +1901,7 @@ function applyApiKey(key) {
 
 function submitKeyInput() {
   const val = document.getElementById('keyInput').value;
-  if (!val.trim()) { showToast('Please paste your Anthropic API key first.'); return; }
+  if (!val.trim()) { showToast('Please paste your OpenAI API key first.'); return; }
   applyApiKey(val);
 }
 
@@ -1914,11 +1915,11 @@ document.getElementById('envInput').addEventListener('change', function(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     const text = ev.target.result;
-    const match = text.match(/ANTHROPIC_API_KEY\s*=\s*["']?([^\s"'\r\n]+)["']?/);
+    const match = text.match(/OPENAI_API_KEY\s*=\s*["']?([^\s"'\r\n]+)["']?/);
     if (match) {
       applyApiKey(match[1]);
     } else {
-      showToast('Could not find ANTHROPIC_API_KEY in .env file');
+      showToast('Could not find OPENAI_API_KEY in .env file');
     }
   };
   reader.readAsText(file);
