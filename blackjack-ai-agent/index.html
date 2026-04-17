@@ -1233,7 +1233,7 @@ async function queryAI(silent = false) {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1000,
         system: SYSTEM_PROMPT(detailLevel),
         messages: [{ role: 'user', content: ctx }],
@@ -1248,7 +1248,13 @@ async function queryAI(silent = false) {
     }
 
     if (!resp.ok) {
-      showToast(`AI error: ${resp.status} ${resp.statusText}`);
+      let errDetail = `${resp.status}`;
+      try {
+        const errBody = await resp.json();
+        errDetail = `${resp.status} — ${errBody?.error?.message || resp.statusText}`;
+        console.warn('[BJ-AGENT] API error body:', errBody);
+      } catch (_) { errDetail = `${resp.status} ${resp.statusText}`; }
+      showToast(`AI error: ${errDetail}`);
       showRecLoading(false);
       return null;
     }
@@ -1257,9 +1263,12 @@ async function queryAI(silent = false) {
     const rawText = data.content?.[0]?.text || '';
     console.log('[BJ-AGENT] AI raw response:', rawText);
 
+    // Strip markdown code fences if model wraps JSON despite instructions
+    const stripped = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
     let rec;
     try {
-      rec = JSON.parse(rawText);
+      rec = JSON.parse(stripped);
     } catch (e) {
       console.warn('[BJ-AGENT] Failed to parse AI response:', rawText);
       showToast('Strategy unavailable — malformed response');
