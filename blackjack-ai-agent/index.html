@@ -74,6 +74,42 @@
     }
     .env-btn:hover { border-color: var(--gold); color: var(--gold); }
     #envInput { display: none; }
+    .key-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .key-input-wrap:focus-within { border-color: var(--gold-dim); }
+    .key-input-wrap.has-key { border-color: rgba(232,196,90,0.35); }
+    #keyInput {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      padding: 6px 10px;
+      width: 200px;
+    }
+    #keyInput::placeholder { color: #444; }
+    .key-input-submit {
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .key-input-submit:hover { background: rgba(232,196,90,0.08); color: var(--gold); }
     .key-badge {
       font-family: 'DM Mono', monospace;
       font-size: 11px;
@@ -674,8 +710,12 @@
 <header>
   <div class="logo"><span>♠</span> BLACKJACK AI</div>
   <div class="header-right">
+    <div class="key-input-wrap" id="keyInputWrap">
+      <input type="password" id="keyInput" placeholder="sk-ant-… paste API key" autocomplete="off" spellcheck="false">
+      <button class="key-input-submit" onclick="submitKeyInput()">Set Key</button>
+    </div>
     <label class="env-label">
-      <button class="env-btn" onclick="document.getElementById('envInput').click()">⬆ Upload .env</button>
+      <button class="env-btn" onclick="document.getElementById('envInput').click()">⬆ .env</button>
       <input type="file" id="envInput" accept=".env,text/plain">
     </label>
     <div class="key-badge" id="keyBadge"></div>
@@ -684,7 +724,7 @@
 
 <!-- WARN BANNER -->
 <div id="warnBanner">
-  <span>⚠ No API key loaded — AI advisor unavailable. Upload your .env file to enable recommendations.</span>
+  <span>⚠ No API key loaded — AI advisor unavailable. Paste your key in the input or upload a .env file.</span>
   <span class="warn-close" onclick="document.getElementById('warnBanner').classList.remove('visible')">✕</span>
 </div>
 
@@ -1809,6 +1849,32 @@ function resetSession() {
 // API KEY HANDLING
 // =============================================================================
 
+function applyApiKey(key) {
+  key = key.trim();
+  if (!key) return;
+  apiKey = key;
+  const masked = apiKey.slice(0, 10) + '••••••••••••' + apiKey.slice(-4);
+  const badge = document.getElementById('keyBadge');
+  badge.textContent = 'Key: ' + masked;
+  badge.classList.add('visible');
+  document.getElementById('warnBanner').classList.remove('visible');
+  document.getElementById('keyInputWrap').classList.add('has-key');
+  document.getElementById('keyInput').value = '';
+  document.getElementById('keyInput').placeholder = 'Key loaded ✓';
+  setButtons(gameState.phase === 'playing' ? 'playing' : 'none');
+  console.log('[BJ-AGENT] API key loaded successfully.');
+}
+
+function submitKeyInput() {
+  const val = document.getElementById('keyInput').value;
+  if (!val.trim()) { showToast('Please paste your Anthropic API key first.'); return; }
+  applyApiKey(val);
+}
+
+document.getElementById('keyInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') submitKeyInput();
+});
+
 document.getElementById('envInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -1817,14 +1883,7 @@ document.getElementById('envInput').addEventListener('change', function(e) {
     const text = ev.target.result;
     const match = text.match(/ANTHROPIC_API_KEY\s*=\s*["']?([^\s"'\r\n]+)["']?/);
     if (match) {
-      apiKey = match[1].trim();
-      const masked = apiKey.slice(0, 10) + '••••••••••••' + apiKey.slice(-4);
-      const badge = document.getElementById('keyBadge');
-      badge.textContent = 'Key: ' + masked;
-      badge.classList.add('visible');
-      document.getElementById('warnBanner').classList.remove('visible');
-      setButtons(gameState.phase === 'playing' ? 'playing' : 'none');
-      console.log('[BJ-AGENT] API key loaded successfully.');
+      applyApiKey(match[1]);
     } else {
       showToast('Could not find ANTHROPIC_API_KEY in .env file');
     }
