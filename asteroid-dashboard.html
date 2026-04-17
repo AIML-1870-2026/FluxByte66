@@ -1152,9 +1152,10 @@ function makeGlowTexture(hex) {
   c.width = c.height = S;
   const ctx = c.getContext('2d');
   const g   = ctx.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
-  g.addColorStop(0,    hex);
-  g.addColorStop(0.25, hex + 'cc');
-  g.addColorStop(0.55, hex + '55');
+  g.addColorStop(0,    hex + 'ff');
+  g.addColorStop(0.15, hex + 'ff');
+  g.addColorStop(0.45, hex + 'bb');
+  g.addColorStop(0.75, hex + '44');
   g.addColorStop(1,    hex + '00');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, S, S);
@@ -1197,7 +1198,7 @@ function rebuildSprites() {
 
     // Size inversely proportional to magnitude (lower H = bigger object)
     const mag       = a.mag ?? 25;
-    const baseScale = Math.max(1.5, Math.min(8, (30 - mag) / 3));
+    const baseScale = Math.max(4, Math.min(16, (30 - mag) / 1.8));
     const color     = a.hazardous ? '#ff1a1a' : '#ff6600';
 
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -1223,7 +1224,7 @@ function rebuildSprites() {
       depthWrite:  false,
       blending:    THREE.AdditiveBlending,
     }));
-    moon.scale.setScalar(10);
+    moon.scale.setScalar(18);
     moon.position.copy(latLngAltToXYZ(23.45, 0, distToAlt(LD_KM)));
     moon.userData = { _type: 'moon', _data: null };
     _spriteGroup.add(moon);
@@ -1277,7 +1278,7 @@ function startPulseAnim() {
 function setupRaycasting(g) {
   const container = document.getElementById('globe-container');
   const raycaster  = new THREE.Raycaster();
-  raycaster.params.Sprite = { threshold: 1 };
+  raycaster.params.Sprite = { threshold: 6 };
   const mouse = new THREE.Vector2();
   let   downPos = null;
 
