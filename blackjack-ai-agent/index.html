@@ -110,6 +110,18 @@
       white-space: nowrap;
     }
     .key-input-submit:hover { background: rgba(232,196,90,0.08); color: var(--gold); }
+    .key-toggle {
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+    .key-toggle:hover { color: var(--text); }
     .key-badge {
       font-family: 'DM Mono', monospace;
       font-size: 11px;
@@ -711,7 +723,8 @@
   <div class="logo"><span>♠</span> BLACKJACK AI</div>
   <div class="header-right">
     <div class="key-input-wrap" id="keyInputWrap">
-      <input type="password" id="keyInput" placeholder="sk-ant-… paste API key" autocomplete="off" spellcheck="false">
+      <input type="password" id="keyInput" placeholder="sk-ant-… paste API key" autocomplete="new-password" spellcheck="false" autocorrect="off" autocapitalize="off">
+      <button class="key-toggle" id="keyToggle" onclick="toggleKeyVisibility()" title="Show/hide key">👁</button>
       <button class="key-input-submit" onclick="submitKeyInput()">Set Key</button>
     </div>
     <label class="env-label">
@@ -1221,7 +1234,7 @@ async function queryAI(silent = false) {
   if (!silent) showRecLoading(true);
 
   const ctx = buildHandContext();
-  console.log(`[BJ-AGENT] AI queried — detail level: ${detailLevel}`);
+  console.log(`[BJ-AGENT] AI queried — detail level: ${detailLevel} | key prefix: ${apiKey.slice(0,14)}... (len ${apiKey.length})`);
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1858,10 +1871,21 @@ function resetSession() {
 // API KEY HANDLING
 // =============================================================================
 
+function toggleKeyVisibility() {
+  const input = document.getElementById('keyInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
 function applyApiKey(key) {
-  key = key.trim();
+  // Strip whitespace, surrounding quotes, and any non-printable/non-ASCII characters
+  key = key
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, '')   // remove surrounding quotes
+    .replace(/[^\x21-\x7E]/g, '')       // keep only printable ASCII (no spaces, no control chars)
+    .trim();
   if (!key) return;
   apiKey = key;
+  console.log(`[BJ-AGENT] API key set — prefix: ${apiKey.slice(0, 14)}... length: ${apiKey.length}`);
   const masked = apiKey.slice(0, 10) + '••••••••••••' + apiKey.slice(-4);
   const badge = document.getElementById('keyBadge');
   badge.textContent = 'Key: ' + masked;
